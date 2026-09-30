@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'line_wrap'
+require_relative 'optimal_line_wrap'
 require_relative 'arranger'
 
 module Prawn
@@ -11,7 +12,15 @@ module Prawn
       # @private
       module Wrap
         def initialize(_array, options)
-          @line_wrap = Prawn::Text::Formatted::LineWrap.new
+          @line_wrap =
+            if options[:optimal_wrapping]
+              Prawn::Text::Formatted::OptimalLineWrap.new(
+                stretch: options[:word_spacing_stretch],
+                shrink: options[:word_spacing_shrink],
+              )
+            else
+              Prawn::Text::Formatted::LineWrap.new
+            end
           @arranger = Prawn::Text::Formatted::Arranger.new(
             @document,
             kerning: options[:kerning],
@@ -53,6 +62,7 @@ module Prawn
               width: available_width,
               arranger: @arranger,
               disable_wrap_by_char: @disable_wrap_by_char,
+              justify: @align,
             )
 
             if enough_height_for_this_line?
@@ -69,6 +79,24 @@ module Prawn
           @arranger.unconsumed
         end
 
+        def line_adjustments
+          if @line_wrap.respond_to?(:line_adjustments)
+            @line_wrap.line_adjustments
+          else
+            @line_adjustments || []
+          end
+        end
+
+        def line_breaks
+          if @line_wrap.respond_to?(:line_plans)
+            @line_wrap.line_plans.map do |plan|
+              { text: plan[:text], adjustment: plan[:adjustment] }
+            end
+          else
+            @line_breaks || []
+          end
+        end
+
         private
 
         def print_line
@@ -77,8 +105,14 @@ module Prawn
           fragments_this_line = []
 
           word_spacing = word_spacing_for_this_line
+          next_string_is_newline = @arranger.preview_next_string == "\n"
           @arranger.fragments.each do |fragment|
             fragment.word_spacing = word_spacing
+            if fragment.format_state[:optimal_trailing_glue]
+              printed_fragments << "\n" if next_string_is_newline &&
+                @printed_lines.last != ''
+              next
+            end
             if fragment.text == "\n"
               printed_fragments << "\n" if @printed_lines.last == ''
               break
@@ -104,12 +138,24 @@ module Prawn
           @printed_lines << printed_fragments.map { |s|
             s.dup.force_encoding(::Encoding::UTF_8)
           }.join
+          @line_breaks ||= []
+          @line_breaks << {
+            text: @printed_lines.last,
+            adjustment: word_spacing,
+          }
+          @line_adjustments ||= []
+          @line_adjustments << word_spacing
         end
 
         def word_spacing_for_this_line
-          if @align == :justify && @line_wrap.space_count.positive? &&
-              !@line_wrap.paragraph_finished?
-            (available_width - @line_wrap.width) / @line_wrap.space_count
+          if @align == :justify && !@line_wrap.paragraph_finished?
+            if @line_wrap.respond_to?(:adjustment)
+              @line_wrap.adjustment
+            elsif @line_wrap.space_count.positive?
+              (available_width - @line_wrap.width) / @line_wrap.space_count
+            else
+              0
+            end
           else
             0
           end
@@ -146,6 +192,8 @@ module Prawn
           @baseline_y = 0
 
           @printed_lines = []
+          @line_breaks = nil
+          @line_adjustments = []
           @nothing_printed = true
           @everything_printed = false
         end

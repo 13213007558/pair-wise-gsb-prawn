@@ -42,6 +42,22 @@ module Prawn
         attr_reader :fragments
         attr_reader :current_format_state
 
+        def unconsumed=(value)
+          @unconsumed = value
+        end
+
+        def measure_text(text, format_state = {})
+          measurement_fragment =
+            Prawn::Text::Formatted::Fragment.new('', format_state, @document)
+          width = nil
+
+          apply_font_settings(measurement_fragment) do
+            width = @document.width_of(text, kerning: @kerning)
+          end
+
+          width
+        end
+
         def initialize(document, options = {})
           @document = document
           @fragments = []
@@ -354,7 +370,8 @@ module Prawn
               break
             elsif hash[:text].strip.empty? && @consumed.length > 1
               # this entire fragment is trailing white space
-              hash[:exclude_trailing_white_space] = true
+              hash[:exclude_trailing_white_space] = true unless
+                hash.key?(:exclude_trailing_white_space)
             else
               # this fragment contains the first non-white space we have
               # encountered since the end of the line

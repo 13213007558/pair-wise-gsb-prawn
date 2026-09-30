@@ -126,6 +126,15 @@ module Prawn
         # @option options :disable_wrap_by_char [Boolean] (false)
         #   Whether or not to prevent mid-word breaks when text does not fit in
         #   box.
+        # @option options :line_wrapping [:greedy, :optimal] (:greedy)
+        #   Choose greedy line breaks or optimize break choices for the complete
+        #   paragraph.
+        # @option options :word_spacing_stretch [Number] (one space width)
+        #   Maximum additional width per inter-word space used by optimal,
+        #   justified wrapping.
+        # @option options :word_spacing_shrink [Number] (half a space width)
+        #   Maximum width removed per inter-word space by optimal, justified
+        #   wrapping.
         # @option options :mode [Symbol] (:fill)
         #   The text rendering mode. See documentation for
         #   {Prawn::Document#text_rendering_mode} for a list of valid options.
@@ -179,6 +188,10 @@ module Prawn
 
           @overflow = options[:overflow] || :truncate
           @disable_wrap_by_char = options[:disable_wrap_by_char]
+          @optimal_wrapping =
+            options[:optimal_wrapping] ||
+            options[:line_wrapping].to_s == 'optimal'
+          options[:optimal_wrapping] = @optimal_wrapping
 
           self.original_text = formatted_text
           @text = nil
@@ -225,6 +238,8 @@ module Prawn
             kerning: options[:kerning],
             size: options[:size],
             style: options[:style],
+            word_spacing_stretch: options[:word_spacing_stretch],
+            word_spacing_shrink: options[:word_spacing_shrink],
           }
 
           super(formatted_text, options)
@@ -284,6 +299,16 @@ module Prawn
         # @return [Number]
         def available_width
           @width
+        end
+
+        # Actual line divisions selected by the most recent render.
+        #
+        # Each entry contains the line text and the adjustment applied to each
+        # inter-word space on that line.
+        #
+        # @return [Array<Hash{Symbol => String, Number}>]
+        def line_breaks
+          super
         end
 
         # The height actually used during the previous {render}.
@@ -407,6 +432,9 @@ module Prawn
             rotate rotate_around
             overflow min_font_size
             disable_wrap_by_char
+            optimal_wrapping
+            line_wrapping
+            word_spacing_stretch word_spacing_shrink
             leading character_spacing
             mode single_line
             document
