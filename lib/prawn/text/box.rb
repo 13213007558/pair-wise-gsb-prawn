@@ -35,6 +35,15 @@ module Prawn
     #   spacing.
     # @option options :disable_wrap_by_char [Boolean] (false)
     #   Whether or not to prevent mid-word breaks when text does not fit in box.
+    # @option options :line_break_strategy [:greedy, :optimal] (:greedy)
+    #   When +:optimal+, choose breaks for an entire paragraph instead of
+    #   filling each line independently.
+    # @option options :word_spacing_stretch [Number] (width of one space)
+    #   Maximum additional space per inter-word gap available to optimal
+    #   justified wrapping.
+    # @option options :word_spacing_shrink [Number] (half a space)
+    #   Maximum reduction per inter-word gap available to optimal justified
+    #   wrapping.
     # @option options :mode [Symbol] (:fill)
     #   The text rendering mode. See documentation for
     #   {Prawn::Document#text_rendering_mode} for a list of valid options.
@@ -120,6 +129,15 @@ module Prawn
       #   spacing.
       # @option options :disable_wrap_by_char [Boolean] (false)
       #   Whether or not to prevent mid-word breaks when text does not fit in box.
+      # @option options :line_break_strategy [:greedy, :optimal] (:greedy)
+      #   When +:optimal+, choose breaks for an entire paragraph instead of
+      #   filling each line independently.
+      # @option options :word_spacing_stretch [Number] (width of one space)
+      #   Maximum additional space per inter-word gap available to optimal
+      #   justified wrapping.
+      # @option options :word_spacing_shrink [Number] (half a space)
+      #   Maximum reduction per inter-word gap available to optimal justified
+      #   wrapping.
       # @option options :mode [Symbol] (:fill)
       #   The text rendering mode. See documentation for
       #   {Prawn::Document#text_rendering_mode} for a list of valid options.

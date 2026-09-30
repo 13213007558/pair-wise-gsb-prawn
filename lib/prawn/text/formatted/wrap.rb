@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'line_wrap'
+require_relative 'optimal_line_break'
 require_relative 'arranger'
 
 module Prawn
@@ -10,6 +11,8 @@ module Prawn
       #
       # @private
       module Wrap
+        attr_reader :line_adjustments
+
         def initialize(_array, options)
           @line_wrap = Prawn::Text::Formatted::LineWrap.new
           @arranger = Prawn::Text::Formatted::Arranger.new(
@@ -17,6 +20,9 @@ module Prawn
             kerning: options[:kerning],
           )
           @disable_wrap_by_char = options[:disable_wrap_by_char]
+          @line_break_strategy = options[:line_break_strategy] || :greedy
+          @word_spacing_stretch = options[:word_spacing_stretch]
+          @word_spacing_shrink = options[:word_spacing_shrink]
         end
 
         # See the developer documentation for PDF::Core::Text#wrap
@@ -50,7 +56,7 @@ module Prawn
             @line_wrap.wrap_line(
               document: @document,
               kerning: @kerning,
-              width: available_width,
+              width: line_wrap_width,
               arranger: @arranger,
               disable_wrap_by_char: @disable_wrap_by_char,
             )
@@ -100,6 +106,7 @@ module Prawn
             )
             accumulated_width += fragment_this_line.width
           end
+          @line_adjustments << word_spacing if @line_break_strategy == :optimal
 
           @printed_lines << printed_fragments.map { |s|
             s.dup.force_encoding(::Encoding::UTF_8)
@@ -107,12 +114,29 @@ module Prawn
         end
 
         def word_spacing_for_this_line
+          if @line_break_strategy == :optimal
+            return planned_line_adjustment.to_f
+          end
+
           if @align == :justify && @line_wrap.space_count.positive? &&
               !@line_wrap.paragraph_finished?
             (available_width - @line_wrap.width) / @line_wrap.space_count
           else
             0
           end
+        end
+
+        def planned_line_adjustment
+          @pending_line_adjustments.fetch(@line_adjustments.length, 0)
+        end
+
+        def line_wrap_width
+          return available_width unless @line_break_strategy == :optimal
+
+          planned_width = @pending_line_widths.fetch(@line_adjustments.length)
+          [available_width, planned_width].max
+        rescue IndexError
+          available_width
         end
 
         def enough_height_for_this_line?
@@ -129,6 +153,7 @@ module Prawn
           if require_relatived_total_height > @height + 0.0001
             # no room for the full height of this line
             @arranger.repack_unretrieved
+            remove_planned_break if @line_break_strategy == :optimal
             false
           else
             true
@@ -137,6 +162,12 @@ module Prawn
 
         def initialize_wrap(array)
           @text = nil
+          @line_adjustments = []
+          @pending_line_adjustments = []
+          @pending_line_widths = []
+
+          array = layout_paragraphs_optimally(array) if @line_break_strategy == :optimal
+
           @arranger.format_array = array
 
           # these values will depend on the maximum value within a given line
@@ -150,6 +181,28 @@ module Prawn
           @everything_printed = false
         end
 
+        def layout_paragraphs_optimally(array)
+          stretch = @word_spacing_stretch ||
+            @document.width_of(' ', kerning: @kerning)
+          shrink = @word_spacing_shrink || stretch * 0.5
+
+          planner = Prawn::Text::Formatted::OptimalLineBreak.new(
+            @document,
+            width: available_width,
+            kerning: @kerning,
+            stretch: stretch,
+            shrink: shrink,
+            justify: @align == :justify,
+            disable_wrap_by_char: @disable_wrap_by_char,
+          )
+          planned = planner.layout(array)
+          @pending_line_adjustments = planner.lines.map { |line|
+            line.adjustment.to_f
+          }
+          @pending_line_widths = planner.lines.map(&:width)
+          planned
+        end
+
         def format_and_draw_fragment(fragment, accumulated_width, line_width, word_spacing)
           @arranger.apply_color_and_font_settings(fragment) do
             draw_fragment(
@@ -158,6 +211,12 @@ module Prawn
               line_width,
               word_spacing,
             )
+          end
+        end
+
+        def remove_planned_break
+          if @arranger.unconsumed.first&.dig(:text) == "\n"
+            @arranger.unconsumed.shift
           end
         end
       end
