@@ -223,6 +223,7 @@ module Prawn
           end
           @options = {
             kerning: options[:kerning],
+            gpos: options[:gpos],
             size: options[:size],
             style: options[:style],
           }
@@ -341,12 +342,14 @@ module Prawn
                   fragment.text,
                   at: [x, y],
                   kerning: @kerning,
+                  gpos: @options[:gpos],
                 )
               else
                 @document.draw_text!(
                   fragment.text,
                   at: [x, y],
                   kerning: @kerning,
+                  gpos: @options[:gpos],
                 )
               end
             end
@@ -413,6 +416,7 @@ module Prawn
             direction
             fallback_fonts
             draw_text_callback
+            gpos
           ]
         end
 
@@ -623,6 +627,7 @@ module Prawn
           @document.process_text_options(@options)
           @font_size = @options[:size]
           @kerning = @options[:kerning]
+          @gpos = @options[:gpos]
         end
 
         def render_rotated(text)

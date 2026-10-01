@@ -107,14 +107,14 @@ module Prawn
                 if segment == zero_width_space(segment.encoding)
                   0
                 else
-                  @document.width_of(segment, kerning: @kerning)
+                  @document.width_of(segment, kerning: @kerning, gpos: @gpos)
                 end
 
               if @accumulated_width + segment_width <= @width
                 @accumulated_width += segment_width
                 shy = soft_hyphen(segment.encoding)
                 if segment[-1] == shy
-                  sh_width = @document.width_of(shy, kerning: @kerning)
+                  sh_width = @document.width_of(shy, kerning: @kerning, gpos: @gpos)
                   @accumulated_width -= sh_width
                 end
                 @fragment_output += segment
@@ -217,6 +217,7 @@ module Prawn
         def initialize_line(options)
           @document = options[:document]
           @kerning = options[:kerning]
+          @gpos = options[:gpos]
           @width = options[:width]
 
           @disable_wrap_by_char = options[:disable_wrap_by_char]

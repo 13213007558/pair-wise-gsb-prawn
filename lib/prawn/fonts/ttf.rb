@@ -163,7 +163,9 @@ module Prawn
       # @return [Number]
       def compute_width_of(string, options = {})
         scale = (options[:size] || size) / 1000.0
-        if options[:kerning]
+        if gpos_options(options)
+          gpos_line_width(string, options) * scale
+        elsif options[:kerning]
           kern(string).reduce(0) { |s, r|
             if r.is_a?(Numeric)
               s - r
@@ -203,6 +205,10 @@ module Prawn
       # @return [Array<Array(0, (String, Array)>]
       def encode_text(text, options = {})
         text = text.chomp
+
+        if (gpos = gpos_options(options))
+          return encode_positioned_text(text, gpos)
+        end
 
         if options[:kerning]
           last_subset = nil
@@ -344,7 +350,7 @@ module Prawn
       # @return [Boolean]
       def glyph_present?(char)
         code = char.codepoints.first
-        cmap[code].positive?
+        cmap[code].to_i.positive?
       end
 
       # Returns the number of characters in `str` (a UTF-8-encoded string).
@@ -390,6 +396,42 @@ module Prawn
           else
             {}
           end
+      end
+
+      def encode_positioned_text(text, gpos)
+        codepoints = text.codepoints
+        encoded = @subsets.encode(codepoints)
+        positions = gpos_engine.apply(codepoints, cmap, gpos)
+        index = 0
+
+        chunks = encoded.map do |subset, string|
+          step = full_font_embedding ? 2 : 1
+          count = string.bytesize / step
+          chunk = [
+            subset,
+            Gpos::Run.new(string, positions[index, count], step),
+          ]
+          index += count
+          chunk
+        end
+
+        chunks.reject { |_subset, run| run.encoded.empty? }
+      end
+
+      def gpos_line_width(string, options)
+        return 0 if string.empty?
+
+        gpos_engine.line_width(string.codepoints, cmap, gpos_options(options))
+      end
+
+      def gpos_options(options)
+        return nil unless gpos_engine.supported?
+
+        Gpos.normalize_options(options[:gpos])
+      end
+
+      def gpos_engine
+        @gpos_engine ||= Gpos.new(@ttf, scale_factor)
       end
 
       def hmtx
@@ -613,3 +655,5 @@ module Prawn
     end
   end
 end
+
+require_relative 'gpos'

@@ -20,6 +20,56 @@ module Prawn
     # Soft Hyphen (invisible, except when causing a line break)
     SHY = "\u00AD"
 
+    def add_text_content(text, x, y, options)
+      chunks = font.encode_text(text, options)
+      return super if chunks.empty?
+      return super unless chunks.any? { |_subset, string| string.respond_to?(:positions) }
+
+      add_content("\nBT")
+
+      chunks.each do |(subset, run)|
+        font.add_to_current_page(subset)
+        add_content(
+          [
+            PDF::Core.pdf_object(font.identifier_for(subset), true),
+            PDF::Core.pdf_object(font_size, true),
+            'Tf',
+          ].join(' '),
+        )
+
+        unless run.respond_to?(:positions)
+          add_content("#{PDF::Core.pdf_object(run, true)} Tj")
+          next
+        end
+
+        run.encoded.bytes.each_slice(run.step).with_index do |bytes, index|
+          position = run.positions[index]
+          spacing_x = character_spacing * index
+          prefix = run.encoded.byteslice(0, index * run.step)
+          spacing_x += word_spacing * prefix.bytes.count(0x20)
+          glyph_x =
+            (position.x_origin + position.x_placement) * font_size / 1000.0 + spacing_x
+          glyph_y = -position.y_placement * font_size / 1000.0
+          glyph = bytes.pack('C*').force_encoding(::Encoding::BINARY)
+
+          if options[:rotate]
+            rad = Float(options[:rotate]) * Math::PI / 180
+            matrix = [
+              Math.cos(rad), Math.sin(rad),
+              -Math.sin(rad), Math.cos(rad),
+              x + glyph_x, y + glyph_y,
+            ]
+            add_content("#{PDF::Core.real_params(matrix)} Tm")
+          else
+            add_content("#{PDF::Core.real(x + glyph_x)} #{PDF::Core.real(y + glyph_y)} Td")
+          end
+          add_content("#{PDF::Core.pdf_object(glyph, true)} Tj")
+        end
+      end
+
+      add_content("ET\n")
+    end
+
     # @group Stable API
 
     # Draws text on the page.
@@ -334,6 +384,7 @@ module Prawn
     #   Whether or not to use kerning (if it is available with the current
     #   font).
     # @option options :size [Number] (current font size)
+    # @option options :gpos [Boolean, Hash] (false) GPOS positioning options.
     #   The font size to use.
     # @option options :style [Symbol] (current style)
     #   The style to use. The requested style must be part of the current font
@@ -658,7 +709,7 @@ module Prawn
       if options[:kerning].nil?
         options[:kerning] = default_kerning?
       end
-      valid_options = PDF::Core::Text::VALID_OPTIONS + %i[at rotate]
+      valid_options = PDF::Core::Text::VALID_OPTIONS + %i[at rotate gpos]
       Prawn.verify_options(valid_options, options)
       options
     end

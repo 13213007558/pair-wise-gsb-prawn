@@ -15,7 +15,9 @@ module Prawn
           @arranger = Prawn::Text::Formatted::Arranger.new(
             @document,
             kerning: options[:kerning],
+            gpos: options[:gpos],
           )
+          @gpos = options[:gpos]
           @disable_wrap_by_char = options[:disable_wrap_by_char]
         end
 
@@ -50,6 +52,7 @@ module Prawn
             @line_wrap.wrap_line(
               document: @document,
               kerning: @kerning,
+              gpos: @gpos,
               width: available_width,
               arranger: @arranger,
               disable_wrap_by_char: @disable_wrap_by_char,
