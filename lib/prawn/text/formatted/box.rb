@@ -170,6 +170,13 @@ module Prawn
         #   The minimum font size to use when `:overflow` is set to
         #   `:shrink_to_fit` (that is the font size will not be reduced to less
         #   than this value, even if it means that some text will be cut off).
+        # @option options :exclusions [Array<Array<Array(Number, Number)>>]
+        #   An array of exclusion zones the text has to flow around. Each
+        #   exclusion zone is a simple polygon given as an array of
+        #   <tt>[x, y]</tt> points in absolute page coordinates. Polygons may
+        #   be concave but must not intersect each other. Every line of text
+        #   is laid out in the horizontal intervals that remain between the
+        #   zones, based on the actual height of the line.
         def initialize(formatted_text, options = {})
           @inked = false
           Prawn.verify_options(valid_options, options)
@@ -204,6 +211,7 @@ module Prawn
           @rotate_around = options[:rotate_around] || :upper_left
           @single_line = options[:single_line]
           @draw_text_callback = options[:draw_text_callback]
+          @exclusions = normalize_exclusions(options[:exclusions])
 
           # if the text rendering mode is :unknown, force it back to :fill
           if @mode == :unknown
@@ -304,19 +312,22 @@ module Prawn
         def draw_fragment(
           fragment, accumulated_width = 0, line_width = 0, word_spacing = 0
         )
+          line_left = @segment_left || @at[0]
+          line_available_width = @segment_width || @width
+
           case @align
           when :left
-            x = @at[0]
+            x = line_left
           when :center
-            x = @at[0] + (@width * 0.5) - (line_width * 0.5)
+            x = line_left + (line_available_width * 0.5) - (line_width * 0.5)
           when :right
-            x = @at[0] + @width - line_width
+            x = line_left + line_available_width - line_width
           when :justify
             x =
               if @direction == :ltr
-                @at[0]
+                line_left
               else
-                @at[0] + @width - line_width
+                line_left + line_available_width - line_width
               end
           else
             raise ArgumentError,
@@ -413,10 +424,169 @@ module Prawn
             direction
             fallback_fonts
             draw_text_callback
+            exclusions
           ]
         end
 
         private
+
+        # Whether any exclusion zones are defined.
+        #
+        # @return [Boolean]
+        def exclusion_zones?
+          !@exclusions.empty?
+        end
+
+        # The whole width of the box as a single interval.
+        #
+        # @return [Array<Array(Number, Number)>]
+        def full_width_intervals
+          [[@at[0], @at[0] + @width]]
+        end
+
+        # The horizontal intervals (in bounding box coordinates) within the
+        # box that are not covered by any exclusion zone in the given
+        # vertical band, in left-to-right order.
+        #
+        # @param y_top [Number]
+        # @param y_bottom [Number]
+        # @return [Array<Array(Number, Number)>]
+        def exclusion_intervals(y_top, y_bottom)
+          if @exclusions.empty? || y_top <= y_bottom
+            return full_width_intervals
+          end
+
+          excluded = @exclusions.flat_map { |polygon|
+            polygon_exclusion_intervals(polygon, y_top, y_bottom)
+          }
+
+          subtract_intervals(full_width_intervals, merge_intervals(excluded))
+        end
+
+        # Exclusion zones are defined in absolute page coordinates. Text box
+        # internals work in bounding box coordinates.
+        #
+        # @param exclusions [Array<Array<Array(Number, Number)>>, nil]
+        # @return [Array<Array<Array(Number, Number)>>]
+        def normalize_exclusions(exclusions)
+          return [] if exclusions.nil? || exclusions.empty?
+
+          left = @document.bounds.absolute_left
+          bottom = @document.bounds.absolute_bottom
+
+          exclusions.map do |polygon|
+            unless polygon.is_a?(Array) && polygon.length >= 3
+              raise ArgumentError,
+                'exclusion zones must be polygons of at least 3 points'
+            end
+
+            polygon.map do |point|
+              unless point.is_a?(Array) && point.length == 2
+                raise ArgumentError,
+                  'exclusion zone points must be [x, y] pairs'
+              end
+
+              [point[0] - left, point[1] - bottom]
+            end
+          end
+        end
+
+        # The union of the horizontal cross-sections of a polygon over the
+        # given vertical band. Works for concave polygons: the band is
+        # sliced at every polygon vertex and the cross-section of each slice
+        # is computed at its midpoint.
+        #
+        # @param polygon [Array<Array(Number, Number)>]
+        # @param y_top [Number]
+        # @param y_bottom [Number]
+        # @return [Array<Array(Number, Number)>]
+        def polygon_exclusion_intervals(polygon, y_top, y_bottom)
+          ys = [y_bottom, y_top]
+          polygon.each do |(_, y)|
+            ys << y if y > y_bottom && y < y_top
+          end
+          ys = ys.sort.uniq
+
+          intervals = []
+          ys.each_cons(2) do |low, high|
+            next if high - low < 0.0001
+
+            intervals.concat(
+              polygon_cross_section(polygon, (low + high) * 0.5),
+            )
+          end
+          intervals
+        end
+
+        # The horizontal cross-section of a polygon at the given height using
+        # the even-odd rule.
+        #
+        # @param polygon [Array<Array(Number, Number)>]
+        # @param y [Number]
+        # @return [Array<Array(Number, Number)>]
+        def polygon_cross_section(polygon, y)
+          xs = []
+          polygon.each_with_index do |(x1, y1), index|
+            x2, y2 = polygon[(index + 1) % polygon.length]
+            next if y1 == y2
+            next unless (y1 > y) != (y2 > y)
+
+            xs << (x1 + (((y - y1) * (x2 - x1)) / (y2 - y1)))
+          end
+          xs.sort!
+
+          intervals = []
+          xs.each_slice(2) do |a, b|
+            intervals << [a, b] if b - a > 0.0001
+          end
+          intervals
+        end
+
+        # Whether every used interval is fully covered by one of the
+        # available intervals.
+        #
+        # @param used [Array<Array(Number, Number)>]
+        # @param available [Array<Array(Number, Number)>]
+        # @return [Boolean]
+        def intervals_covered?(used, available)
+          used.all? { |(u0, u1)|
+            available.any? { |(a0, a1)| a0 <= u0 && u1 <= a1 }
+          }
+        end
+
+        # Merge overlapping or touching intervals.
+        #
+        # @param intervals [Array<Array(Number, Number)>]
+        # @return [Array<Array(Number, Number)>]
+        def merge_intervals(intervals)
+          intervals.sort_by(&:first).each_with_object([]) do |interval, merged|
+            if merged.empty? || interval[0] > merged.last[1]
+              merged << interval.dup
+            else
+              merged.last[1] = [merged.last[1], interval[1]].max
+            end
+          end
+        end
+
+        # Subtract excluded intervals from available intervals.
+        #
+        # @param available [Array<Array(Number, Number)>]
+        # @param excluded [Array<Array(Number, Number)>]
+        # @return [Array<Array(Number, Number)>]
+        def subtract_intervals(available, excluded)
+          available.flat_map { |(a0, a1)|
+            excluded.reduce([[a0, a1]]) do |segments, (e0, e1)|
+              segments.flat_map do |(s0, s1)|
+                next [[s0, s1]] if e1 <= s0 || e0 >= s1
+
+                parts = []
+                parts << [s0, e0] if e0 > s0
+                parts << [e1, s1] if e1 < s1
+                parts
+              end
+            end
+          }.reject { |(s0, s1)| s1 - s0 <= 0 }
+        end
 
         def normalized_text(flags)
           text = normalize_encoding

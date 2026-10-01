@@ -288,6 +288,19 @@ module Prawn
           @unconsumed = new_unconsumed.concat(@unconsumed)
         end
 
+        # Move all strings consumed during the current (unfinished) line back
+        # to the unconsumed queue and reset the line state. Used when a line
+        # layout attempt is abandoned, for example when an exclusion zone
+        # leaves no room for any glyph on this line.
+        #
+        # @return [void]
+        def rollback_line
+          @consumed.reverse_each do |hash|
+            @unconsumed.unshift(hash)
+          end
+          initialize_line
+        end
+
         # Get font variant from fragment styles.
         #
         # @param styles [Array<Symbol>]

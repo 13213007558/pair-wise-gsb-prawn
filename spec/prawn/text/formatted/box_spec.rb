@@ -873,4 +873,423 @@ describe Prawn::Text::Formatted::Box do
       )
     end
   end
+
+  describe 'Text::Formatted::Box with :exclusions option' do
+    # Collect the absolute bounding boxes of all printed fragments.
+    def fragment_boxes(texts, options = {})
+      boxes = []
+      callback = Object.new
+      callback.define_singleton_method(:render_in_front) do |fragment|
+        boxes << fragment.absolute_bounding_box
+      end
+      texts = texts.map { |t| t.merge(callback: callback) }
+      described_class.new(texts, **{ document: pdf }.merge(options)).render
+      boxes
+    end
+
+    def rectangle(x0, y0, x1, y1)
+      [[x0, y1], [x1, y1], [x1, y0], [x0, y0]]
+    end
+
+    def overlaps?(box, rect)
+      box[0] < rect[2] && box[2] > rect[0] &&
+        box[1] < rect[3] && box[3] > rect[1]
+    end
+
+    def no_fragment_overlaps(boxes, rect)
+      boxes.none? { |box| overlaps?(box, rect) }
+    end
+
+    def rendered_strings
+      PDF::Inspector::Text.analyze(pdf.render).strings
+    end
+
+    let(:exclusion_rect) { [150, 550, 250, 700] }
+    let(:paragraph) do
+      ('The quick brown fox jumps over the lazy dog. ' * 20).strip
+    end
+
+    it 'flows text around a rectangular exclusion zone' do
+      text = ('The quick brown fox jumps over the lazy dog. ' * 40).strip
+      boxes = fragment_boxes(
+        [{ text: text }],
+        at: [0, 792], width: 400, height: 500,
+        exclusions: [rectangle(*exclusion_rect)]
+      )
+      expect(no_fragment_overlaps(boxes, exclusion_rect)).to be(true)
+      # lines intersecting the rectangle are split into a left and a right
+      # segment
+      expect(boxes.map(&:first)).to include(0, 250)
+      # below the rectangle the full width is used again
+      below = boxes.select { |box| box[3] <= 550 }
+      expect(below).to_not be_empty
+      expect(below.map(&:first)).to include(0)
+    end
+
+    it 'preserves the reading order of words across split lines' do
+      pdf.formatted_text_box(
+        [{ text: paragraph }],
+        at: [0, 792], width: 400, height: 400,
+        exclusions: [rectangle(*exclusion_rect)]
+      )
+      expect(rendered_strings.join.delete(' ')).to eq(paragraph.delete(' '))
+    end
+
+    it 'flows text around a concave polygon' do
+      # U-shaped polygon: two vertical bars joined at the bottom
+      concave = [
+        [100, 750], [150, 750], [150, 560], [250, 560], [250, 750],
+        [300, 750], [300, 500], [100, 500],
+      ]
+      boxes = fragment_boxes(
+        [{ text: ('lorem ipsum dolor sit amet ' * 60).strip }],
+        at: [0, 792], width: 400, height: 792,
+        exclusions: [concave]
+      )
+      # the two arms and the bottom bar of the U
+      expect(no_fragment_overlaps(boxes, [100, 560, 150, 750])).to be(true)
+      expect(no_fragment_overlaps(boxes, [250, 560, 300, 750])).to be(true)
+      expect(no_fragment_overlaps(boxes, [100, 500, 300, 560])).to be(true)
+      # lines between the arms are split into three segments
+      expect(boxes.map(&:first)).to include(0, 150, 300)
+    end
+
+    it 'flows text around multiple disjoint exclusion zones' do
+      zones = [
+        rectangle(0, 600, 150, 700),
+        rectangle(250, 600, 400, 700),
+      ]
+      boxes = fragment_boxes(
+        [{ text: paragraph }],
+        at: [0, 792], width: 400, height: 400,
+        exclusions: zones
+      )
+      expect(no_fragment_overlaps(boxes, [0, 600, 150, 700])).to be(true)
+      expect(no_fragment_overlaps(boxes, [250, 600, 400, 700])).to be(true)
+      # text flows through the channel between the two zones
+      in_channel = boxes.select { |box| box[1] < 700 && box[3] > 600 }
+      expect(in_channel).to_not be_empty
+      expect(in_channel.map(&:first)).to all(be >= 150)
+      expect(in_channel.map { |box| box[2] }).to all(be <= 250)
+    end
+
+    context 'with a narrow channel' do
+      it 'squeezes text through a channel that fits single words' do
+        walls = [
+          rectangle(0, 600, 180, 700),
+          rectangle(220, 600, 400, 700),
+        ]
+        boxes = fragment_boxes(
+          [{ text: paragraph }],
+          at: [0, 792], width: 400, height: 400,
+          exclusions: walls
+        )
+        expect(no_fragment_overlaps(boxes, [0, 600, 180, 700])).to be(true)
+        expect(no_fragment_overlaps(boxes, [220, 600, 400, 700])).to be(true)
+        in_channel = boxes.select { |box| box[1] < 700 && box[3] > 600 }
+        expect(in_channel).to_not be_empty
+        expect(in_channel.map(&:first)).to all(be >= 180)
+        expect(in_channel.map { |box| box[2] }).to all(be <= 220)
+        # and continues below the walls
+        expect(boxes.map { |box| box[3] }).to include(a_value <= 600)
+      end
+
+      it 'advances past a channel that fits no glyph at all' do
+        walls = [
+          rectangle(0, 600, 199, 700),
+          rectangle(201, 600, 400, 700),
+        ]
+        boxes = fragment_boxes(
+          [{ text: paragraph }],
+          at: [0, 792], width: 400, height: 400,
+          exclusions: walls
+        )
+        # nothing is printed in the band covered by the walls
+        in_band = boxes.select { |box| box[1] < 700 && box[3] > 600 }
+        expect(in_band).to be_empty
+        # text resumes below the walls
+        expect(boxes.map { |box| box[3] }).to include(a_value <= 600)
+      end
+    end
+
+    context 'with mixed font sizes' do
+      it 'uses the actual line height to compute the excluded band' do
+        # The rectangle only overlaps the taller band of the line that
+        # contains the 24pt fragment; a plain 12pt line at the same
+        # baseline would not reach it.
+        rect = [0, 775, 100, 787]
+        texts = [
+          { text: 'tiny small words go here ' },
+          { text: 'BIG', size: 24 },
+          { text: ' and back to small again for the rest of the line' },
+        ]
+        boxes = fragment_boxes(
+          texts,
+          at: [0, 800], width: 400, height: 200,
+          exclusions: [rectangle(*rect)]
+        )
+        expect(no_fragment_overlaps(boxes, rect)).to be(true)
+        first_line = boxes.select { |box| box[3] > 787 }
+        expect(first_line).to_not be_empty
+        expect(first_line.map(&:first)).to all(be >= 100)
+        expect(first_line.map(&:first)).to include(100)
+
+        # control: without the tall fragment the line does not intersect
+        # the rectangle and starts at the left edge of the box
+        plain = fragment_boxes(
+          [{ text: 'tiny small words go here BIG and back to small' }],
+          at: [0, 800], width: 400, height: 200,
+          exclusions: [rectangle(*rect)]
+        )
+        expect(plain.map(&:first)).to include(0)
+      end
+
+      it 'skips bands where no layout is safe from the exclusion zones' do
+        # The tall fragment only fits the full width, but the full-width
+        # line band intersects the first zone while the narrower band of
+        # the remaining text intersects the second zone. No layout is
+        # stable, so the line is printed below both zones.
+        zones = [
+          rectangle(0, 770, 350, 775),
+          rectangle(350, 782, 400, 786),
+        ]
+        texts = [
+          { text: 'first line full of small words to push the big word '             'down here ok ' },
+          { text: 'BIG', size: 36 },
+          { text: ' and more small words to keep the flow going' },
+        ]
+        boxes = fragment_boxes(
+          texts,
+          at: [0, 800], width: 400, height: 300,
+          exclusions: zones
+        )
+        expect(no_fragment_overlaps(boxes, [0, 770, 350, 775])).to be(true)
+        expect(no_fragment_overlaps(boxes, [350, 782, 400, 786])).to be(true)
+        expect(boxes.map { |box| box[3] }).to all(be <= 770)
+      end
+
+      it 'accounts for superscript fragments when computing the line band' do
+        pdf.font_size = 24
+        ascender = pdf.font.ascender
+        baseline = 800 - ascender - pdf.font.height
+        normal_top = baseline + ascender
+        script_ascender = (24 * 0.583) * (ascender / 24.0)
+        script_top = baseline + (0.85 * script_ascender) + script_ascender
+
+        # The rectangle sits between the normal line top and the top of
+        # the raised superscript fragment.
+        rect = [0, normal_top + 0.2, 200, script_top - 0.2]
+
+        plain_boxes = fragment_boxes(
+          [{ text: "filler\n" }, { text: '2 rest of the second line' }],
+          at: [0, 800], width: 400, height: 200, size: 24,
+          exclusions: [rectangle(*rect)]
+        )
+        second_line = plain_boxes.select { |box|
+          (box[3] - normal_top).abs < 0.01
+        }
+        expect(second_line).to_not be_empty
+        expect(second_line.map(&:first)).to include(0)
+
+        script_boxes = fragment_boxes(
+          [
+            { text: "filler\n" },
+            { text: '2', styles: [:superscript] },
+            { text: ' rest of the second line' },
+          ],
+          at: [0, 800], width: 400, height: 200, size: 24,
+          exclusions: [rectangle(*rect)]
+        )
+        expect(no_fragment_overlaps(script_boxes, rect)).to be(true)
+        second_line = script_boxes.select { |box|
+          (box[3] - normal_top).abs < 0.01
+        }
+        expect(second_line).to_not be_empty
+        expect(second_line.map(&:first)).to all(be >= 200)
+      end
+    end
+
+    context 'with formatted fragments' do
+      let(:exclusion_rect) { [150, 740, 250, 795] }
+
+      it 'keeps link annotations aligned with split fragments' do
+        link_boxes = []
+        allow(pdf).to receive(:link_annotation) do |box, **_options|
+          link_boxes << box
+        end
+
+        pdf.formatted_text_box(
+          [
+            { text: 'prefix ' },
+            { text: 'click this link right here now and see it work',
+              link: 'http://example.com' },
+            { text: ' suffix words' },
+          ],
+          at: [0, 800], width: 400, height: 200,
+          exclusions: [rectangle(*exclusion_rect)]
+        )
+
+        # the link is split into two segments and each annotation rectangle
+        # hugs its segment, staying clear of the exclusion zone
+        expect(link_boxes.length).to eq(2)
+        expect(link_boxes[0][2]).to be <= 150
+        expect(link_boxes[1][0]).to be >= 250
+        expect(rendered_strings.join.delete(' ')).to include(
+          'clickthislinkrightherenowandseeitwork'
+        )
+      end
+
+      it 'justifies each segment of a split line to its interval' do
+        boxes = fragment_boxes(
+          [{
+            text: 'one two three four five six seven eight nine ten ' \
+              'eleven twelve thirteen fourteen fifteen sixteen seventeen',
+          }],
+          at: [0, 800], width: 400, height: 200,
+          exclusions: [rectangle(*exclusion_rect)], align: :justify
+        )
+        # the left segment is justified up to the left edge of the
+        # rectangle and the right segment up to the right edge of the box
+        expect(boxes.map { |box| box[2] }).to include(
+          a_value_within(0.01).of(150),
+          a_value_within(0.01).of(400),
+        )
+      end
+
+      it 'applies character spacing when wrapping around exclusion zones' do
+        # Stock Prawn slightly overshoots the nominal width with
+        # character spacing; the segments behave no worse than a plain
+        # box of the same width.
+        plain = fragment_boxes(
+          [{ text: paragraph, character_spacing: 2 }],
+          document: create_pdf, at: [0, 800], width: 150, height: 400,
+        )
+        stock_overshoot = plain.map { |box| box[2] - 150 }.max
+
+        segments = fragment_boxes(
+          [{ text: paragraph, character_spacing: 2 }],
+          at: [0, 800], width: 400, height: 400,
+          exclusions: [rectangle(*exclusion_rect)]
+        )
+        in_band = segments.select { |box| box[3] > 740 && box[1] < 795 }
+        expect(in_band).to_not be_empty
+        in_band.each do |box|
+          interval_end = box[0] < 150 ? 150 : 400
+          expect(box[0]).to be >= [interval_end - 150, 0].max
+          expect(box[2]).to be <= interval_end + stock_overshoot
+        end
+
+        text = PDF::Inspector::Text.analyze(pdf.render)
+        expect(text.character_spacing).to include(2.0)
+      end
+    end
+
+    context 'when nothing fits' do
+      it 'returns all text as unprinted when zones cover the whole box' do
+        box = described_class.new(
+          [{ text: 'no room for anything here at all' }],
+          document: pdf, at: [0, 800], width: 400, height: 400,
+          exclusions: [rectangle(0, 400, 400, 800)]
+        )
+        leftover = box.render
+        expect(box.nothing_printed?).to be(true)
+        expect(leftover.map { |hash| hash[:text] }.join).to eq(
+          'no room for anything here at all'
+        )
+      end
+
+      it 'raises CannotFit when the box is too narrow for any glyph' do
+        box = described_class.new(
+          [{ text: 'hello' }],
+          document: pdf, at: [0, 800], width: 2, height: 400,
+          exclusions: [rectangle(50, 600, 60, 700)]
+        )
+        expect { box.render }.to raise_error(Prawn::Errors::CannotFit)
+      end
+    end
+
+    it 'returns unprinted text that can be printed on the next page' do
+      box = described_class.new(
+        [{ text: paragraph }],
+        document: pdf, at: [0, 800], width: 400, height: 80,
+        exclusions: [rectangle(*exclusion_rect)]
+      )
+      leftover = box.render
+      expect(box.everything_printed?).to be(false)
+      expect(leftover).to_not be_empty
+
+      pdf.start_new_page
+      box = described_class.new(
+        leftover,
+        document: pdf, at: [0, 800], width: 400, height: 700,
+        exclusions: [rectangle(*exclusion_rect)]
+      )
+      leftover = box.render
+      expect(box.everything_printed?).to be(true)
+      expect(leftover).to be_empty
+    end
+
+    it 'interprets exclusion zones in absolute page coordinates' do
+      rect = [250, 550, 350, 650]
+      boxes = nil
+      pdf.bounding_box([100, 700], width: 300, height: 300) do
+        boxes = fragment_boxes(
+          [{ text: paragraph }],
+          at: [0, 300], width: 300, height: 300,
+          exclusions: [rectangle(*rect)]
+        )
+      end
+      expect(no_fragment_overlaps(boxes, rect)).to be(true)
+      expect(boxes.map(&:first)).to include(100, 350)
+    end
+
+    it 'works with plain text boxes' do
+      leftover = pdf.text_box(
+        paragraph,
+        at: [0, 792], width: 400, height: 400,
+        exclusions: [rectangle(*exclusion_rect)]
+      )
+      expect(leftover).to eq('')
+      expect(rendered_strings.join.delete(' ')).to eq(paragraph.delete(' '))
+      positions = PDF::Inspector::Text.analyze(pdf.render).positions
+      expect(positions.map(&:first)).to include(0, 250)
+    end
+
+    it 'works in right-to-left direction' do
+      boxes = fragment_boxes(
+        [{ text: paragraph }],
+        at: [0, 792], width: 400, height: 400,
+        exclusions: [rectangle(*exclusion_rect)], direction: :rtl
+      )
+      expect(no_fragment_overlaps(boxes, exclusion_rect)).to be(true)
+    end
+
+    it 'computes the layout but draws nothing on a dry run' do
+      box = described_class.new(
+        [{ text: paragraph }],
+        document: pdf, at: [0, 792], width: 400, height: 400,
+        exclusions: [rectangle(*exclusion_rect)]
+      )
+      box.render(dry_run: true)
+      expect(box.everything_printed?).to be(true)
+      expect(box.height).to be > 0
+      expect(rendered_strings).to be_empty
+    end
+
+    it 'rejects malformed exclusion zones' do
+      expect {
+        described_class.new(
+          [{ text: 'hello' }],
+          document: pdf, exclusions: [[[0, 0], [1, 1]]]
+        )
+      }.to raise_error(ArgumentError)
+
+      expect {
+        described_class.new(
+          [{ text: 'hello' }],
+          document: pdf, exclusions: [[[0, 0], [1, 1], [2]]]
+        )
+      }.to raise_error(ArgumentError)
+    end
+  end
 end

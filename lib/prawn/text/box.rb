@@ -77,6 +77,11 @@ module Prawn
     #   The minimum font size to use when `:overflow` is set to `:shrink_to_fit`
     #   (that is the font size will not be reduced to less than this value, even
     #   if it means that some text will be cut off).
+    # @option options :exclusions [Array<Array<Array(Number, Number)>>]
+    #   An array of exclusion zones the text has to flow around. Each
+    #   exclusion zone is a simple polygon given as an array of
+    #   <tt>[x, y]</tt> points in absolute page coordinates. Polygons may be
+    #   concave but must not intersect each other.
     # @return [String] Any text that did not print under the current settings.
     # @raise [Prawn::Errors::CannotFit]
     #   If not wide enough to print any text.
@@ -162,6 +167,11 @@ module Prawn
       #   The minimum font size to use when `:overflow` is set to `:shrink_to_fit`
       #   (that is the font size will not be reduced to less than this value, even
       #   if it means that some text will be cut off).
+      # @option options :exclusions [Array<Array<Array(Number, Number)>>]
+      #   An array of exclusion zones the text has to flow around. Each
+      #   exclusion zone is a simple polygon given as an array of
+      #   <tt>[x, y]</tt> points in absolute page coordinates. Polygons may be
+      #   concave but must not intersect each other.
       def initialize(string, options = {})
         super([{ text: string }], options)
       end

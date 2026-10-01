@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added exclusion zones to text boxes
+
+The `:exclusions` option of `formatted_text_box`/`text_box` accepts an
+array of simple polygons (in absolute page coordinates) that the text flows
+around. Lines are split into the horizontal intervals left between the zones
+based on the actual height of each line.
+
 ## PrawnPDF 2.5.0
 
 ### Full font embedding
