@@ -47,6 +47,7 @@ module Prawn
           @fragments = []
           @unconsumed = []
           @kerning = options[:kerning]
+          @gpos = options[:gpos]
         end
 
         # Number of spaces in the text.
@@ -369,6 +370,7 @@ module Prawn
             fragment.width = @document.width_of(
               fragment.text,
               kerning: @kerning,
+              gpos: @gpos,
             )
             fragment.line_height = @document.font.height
             fragment.descender = @document.font.descender

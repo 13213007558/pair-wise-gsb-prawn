@@ -98,6 +98,11 @@ module Prawn
     # @option options :kerning [Boolean] (value of document.default_kerning?)
     #   Whether or not to use kerning (if it is available with the current
     #   font).
+    # @option options :gpos [Boolean, Hash] (false)
+    #   Whether to apply OpenType GPOS glyph positioning (pair adjustment
+    #   and mark attachment) when the current font provides a GPOS table.
+    #   A Hash can specify the :script, :language, and :features OpenType
+    #   tags to use. Fonts without a GPOS table are unaffected.
     # @option options :size [Number] (current ofnt size) The font size to use.
     # @option options :color [Color]
     # @option options :character_spacing [Number] (0)
@@ -210,6 +215,11 @@ module Prawn
     # @option options :kerning [Boolean] (value of document.default_kerning?)
     #   Whether or not to use kerning (if it is available with the current
     #   font).
+    # @option options :gpos [Boolean, Hash] (false)
+    #   Whether to apply OpenType GPOS glyph positioning (pair adjustment
+    #   and mark attachment) when the current font provides a GPOS table.
+    #   A Hash can specify the :script, :language, and :features OpenType
+    #   tags to use. Fonts without a GPOS table are unaffected.
     # @option options :size [Number] (current ofnt size) The font size to use.
     # @option options :color [Color]
     # @option options :character_spacing [Number] (0)
@@ -333,6 +343,11 @@ module Prawn
     # @option options :kerning [Boolean] (value of default_kerning?)
     #   Whether or not to use kerning (if it is available with the current
     #   font).
+    # @option options :gpos [Boolean, Hash] (false)
+    #   Whether to apply OpenType GPOS glyph positioning (pair adjustment
+    #   and mark attachment) when the current font provides a GPOS table.
+    #   A Hash can specify the :script, :language, and :features OpenType
+    #   tags to use. Fonts without a GPOS table are unaffected.
     # @option options :size [Number] (current font size)
     #   The font size to use.
     # @option options :style [Symbol] (current style)
@@ -365,6 +380,11 @@ module Prawn
     # @option options :kerning [Boolean]
     #   Whether or not to use kerning (if it is available with the current
     #   font).
+    # @option options :gpos [Boolean, Hash] (false)
+    #   Whether to apply OpenType GPOS glyph positioning (pair adjustment
+    #   and mark attachment) when the current font provides a GPOS table.
+    #   A Hash can specify the :script, :language, and :features OpenType
+    #   tags to use. Fonts without a GPOS table are unaffected.
     # @option options :size [Number]
     #   The font size to use.
     # @option options :style [Symbol]
@@ -387,6 +407,20 @@ module Prawn
 
       x, y = map_to_absolute(options[:at])
       add_text_content(text, x, y, options)
+    end
+
+    # Low level text placement. When the +:gpos+ option is enabled and the
+    # current font provides a GPOS table, glyph positioning (pair
+    # adjustments and mark attachment) is applied to the rendered text.
+    # Otherwise the default (PDF::Core) rendering is used.
+    #
+    # @private
+    def add_text_content(text, x, y, options)
+      if options[:gpos] && font.respond_to?(:gpos?) && font.gpos?
+        add_gpos_text_content(text, x, y, options)
+      else
+        super
+      end
     end
 
     # Gets height of text in PDF points.
@@ -428,6 +462,11 @@ module Prawn
     # @option options :kerning [Boolean] (value of document.default_kerning?)
     #   Whether or not to use kerning (if it is available with the current
     #   font).
+    # @option options :gpos [Boolean, Hash] (false)
+    #   Whether to apply OpenType GPOS glyph positioning (pair adjustment
+    #   and mark attachment) when the current font provides a GPOS table.
+    #   A Hash can specify the :script, :language, and :features OpenType
+    #   tags to use. Fonts without a GPOS table are unaffected.
     # @option options :size [Number] (current ofnt size) The font size to use.
     # @option options :color [Color]
     # @option options :character_spacing [Number] (0)
@@ -523,6 +562,11 @@ module Prawn
     # @option options :kerning [Boolean] (value of document.default_kerning?)
     #   Whether or not to use kerning (if it is available with the current
     #   font).
+    # @option options :gpos [Boolean, Hash] (false)
+    #   Whether to apply OpenType GPOS glyph positioning (pair adjustment
+    #   and mark attachment) when the current font provides a GPOS table.
+    #   A Hash can specify the :script, :language, and :features OpenType
+    #   tags to use. Fonts without a GPOS table are unaffected.
     # @option options :size [Number] (current ofnt size) The font size to use.
     # @option options :color [Color]
     # @option options :character_spacing [Number] (0)
@@ -658,7 +702,7 @@ module Prawn
       if options[:kerning].nil?
         options[:kerning] = default_kerning?
       end
-      valid_options = PDF::Core::Text::VALID_OPTIONS + %i[at rotate]
+      valid_options = PDF::Core::Text::VALID_OPTIONS + %i[at rotate gpos]
       Prawn.verify_options(valid_options, options)
       options
     end
@@ -696,6 +740,85 @@ module Prawn
       @bounding_box.move_past_bottom if (y - amount) < bottom
 
       self.y -= amount
+    end
+
+    # Render text applying GPOS glyph positioning. Horizontal adjustments
+    # are emitted as TJ kerning numbers; vertical offsets (e.g. for
+    # attached marks) are emitted as text rise (Ts) changes.
+    def add_gpos_text_content(text, x, y, options)
+      positioned = font.gpos_position_text(text.chomp, options[:gpos])
+      scale = font.scale_factor
+      rise_scale = scale * font_size / 1000.0
+
+      add_content("\nBT")
+
+      if options[:rotate]
+        rad = Float(options[:rotate]) * Math::PI / 180
+        array = [
+          Math.cos(rad),
+          Math.sin(rad),
+          -Math.sin(rad),
+          Math.cos(rad),
+          x, y,
+        ]
+        add_content("#{PDF::Core.real_params(array)} Tm")
+      else
+        add_content("#{PDF::Core.real(x)} #{PDF::Core.real(y)} Td")
+      end
+
+      current_subset = nil
+      current_rise = 0
+      tj = []
+
+      flush_tj = lambda do
+        if tj.any?
+          add_content("#{PDF::Core.pdf_object(tj, true)} TJ")
+          tj = []
+        end
+      end
+
+      positioned.each_with_index do |glyph, i|
+        (subset, encoded) = font.encode_character(glyph[:codepoint])
+
+        if subset != current_subset
+          flush_tj.call
+          font.add_to_current_page(subset)
+          add_content(
+            [
+              PDF::Core.pdf_object(font.identifier_for(subset), true),
+              PDF::Core.pdf_object(font_size, true),
+              'Tf',
+            ].join(' '),
+          )
+          current_subset = subset
+        end
+
+        rise = glyph[:y_offset] * rise_scale
+        if rise != current_rise
+          flush_tj.call
+          current_rise = rise
+          add_content("#{PDF::Core.real(current_rise)} Ts")
+        end
+
+        tj << (-glyph[:x_offset] * scale) if i.zero? && glyph[:x_offset] != 0
+        tj << encoded
+
+        next_glyph = positioned[i + 1]
+        if next_glyph
+          kern =
+            -((glyph[:advance] - glyph[:orig_advance]) +
+              next_glyph[:x_offset] - glyph[:x_offset]) * scale
+          tj << kern unless kern.zero?
+        end
+      end
+
+      flush_tj.call
+
+      # Text rise is part of the graphics state and persists beyond the
+      # text object, so reset it to avoid leaking into other text.
+      add_content('0 Ts') if current_rise != 0
+
+      add_content("ET\n")
     end
   end
 end

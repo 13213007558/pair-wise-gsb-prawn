@@ -118,6 +118,11 @@ module Prawn
         #   (value of document.default_kerning?)
         #   Whether or not to use kerning (if it is available with the current
         #   font).
+        # @option options :gpos [Boolean, Hash] (false)
+        #   Whether to apply OpenType GPOS glyph positioning (pair adjustment
+        #   and mark attachment) when the current font provides a GPOS table.
+        #   A Hash can specify the :script, :language, and :features OpenType
+        #   tags to use. Fonts without a GPOS table are unaffected.
         # @option options :size [Number] (current font size)
         #   The font size to use.
         # @option options :character_spacing [Number] (0)
@@ -225,6 +230,7 @@ module Prawn
             kerning: options[:kerning],
             size: options[:size],
             style: options[:style],
+            gpos: options[:gpos],
           }
 
           super(formatted_text, options)
@@ -341,12 +347,14 @@ module Prawn
                   fragment.text,
                   at: [x, y],
                   kerning: @kerning,
+                  gpos: @gpos,
                 )
               else
                 @document.draw_text!(
                   fragment.text,
                   at: [x, y],
                   kerning: @kerning,
+                  gpos: @gpos,
                 )
               end
             end
@@ -413,6 +421,7 @@ module Prawn
             direction
             fallback_fonts
             draw_text_callback
+            gpos
           ]
         end
 
@@ -623,6 +632,7 @@ module Prawn
           @document.process_text_options(@options)
           @font_size = @options[:size]
           @kerning = @options[:kerning]
+          @gpos = @options[:gpos]
         end
 
         def render_rotated(text)

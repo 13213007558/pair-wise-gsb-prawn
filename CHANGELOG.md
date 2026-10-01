@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Optional GPOS glyph positioning
+
+Text rendering and width measurement can now apply OpenType GPOS glyph
+positioning (PairPos, MarkToBase, and MarkToMark lookups, selected by
+script, language system, and feature tags) via the new :gpos option of the
+text methods. Positioning affects both glyph placement (including mark
+attachment without extra advance) and line wrapping. Fonts without a GPOS
+table are rendered exactly as before.
+
 ## PrawnPDF 2.5.0
 
 ### Full font embedding

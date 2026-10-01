@@ -10,6 +10,7 @@
 require 'ttfunk'
 require 'ttfunk/subset_collection'
 require_relative 'to_unicode_cmap'
+require_relative 'gpos'
 
 module Prawn
   module Fonts
@@ -163,7 +164,10 @@ module Prawn
       # @return [Number]
       def compute_width_of(string, options = {})
         scale = (options[:size] || size) / 1000.0
-        if options[:kerning]
+        if options[:gpos] && gpos?
+          gpos_position_text(string, options[:gpos]).sum { |g| g[:advance] } *
+            scale_factor * scale
+        elsif options[:kerning]
           kern(string).reduce(0) { |s, r|
             if r.is_a?(Numeric)
               s - r
@@ -192,6 +196,87 @@ module Prawn
         @has_kerning_data
       end
 
+      # Does this font contain a GPOS (Glyph Positioning) table?
+      #
+      # @return [Boolean]
+      def gpos?
+        @ttf.directory.tables.key?('GPOS')
+      end
+
+      # GPOS table reader for this font.
+      #
+      # @return [Prawn::Fonts::GPOS, nil] nil if the font has no GPOS table
+      def gpos
+        return @gpos if defined?(@gpos)
+
+        @gpos =
+          if gpos?
+            table = @ttf.directory.tables['GPOS']
+            io = @ttf.contents
+            data =
+              if io.respond_to?(:string)
+                io.string.byteslice(table[:offset], table[:length])
+              else
+                pos = io.pos
+                io.pos = table[:offset]
+                io.read(table[:length]).tap { io.pos = pos }
+              end
+            GPOS.new(data)
+          end
+      end
+
+      # Apply GPOS positioning to the characters of a string.
+      #
+      # The glyph-to-character correspondence is preserved: the returned
+      # array has exactly one entry per character of the string.
+      #
+      # @param text [String] must be in UTF-8 encoding
+      # @param gpos_options [true, Hash{Symbol => any}]
+      # @option gpos_options :script [String] OpenType script tag
+      # @option gpos_options :language [String] OpenType language system tag
+      # @option gpos_options :features [Array<String>] OpenType feature tags
+      # @return [Array<Hash>] per-character hashes with keys :codepoint,
+      #   :gid, :advance, :orig_advance, :x_offset, :y_offset. Positioning
+      #   values are in font units.
+      def gpos_position_text(text, gpos_options = true)
+        opts = gpos_options.is_a?(Hash) ? gpos_options : {}
+
+        codepoints = text.codepoints
+        glyphs = codepoints.map { |c| c == 10 ? 0 : cmap[c] }
+        advances = codepoints.each_with_index.map { |c, i|
+          c == 10 ? 0.0 : hmtx.for(glyphs[i]).advance_width
+        }
+
+        gpos
+          .position(
+            glyphs,
+            advances,
+            script: opts[:script],
+            language: opts[:language],
+            features: opts[:features] || GPOS::DEFAULT_FEATURES,
+          )
+          .each_with_index
+          .map { |g, i|
+            g.merge(codepoint: codepoints[i], orig_advance: advances[i])
+          }
+      end
+
+      # Encode a single character for the current subset collection.
+      #
+      # @private
+      # @return [Array(Subset, String)]
+      def encode_character(codepoint)
+        @subsets.encode([codepoint]).first
+      end
+
+      # Scale factor from font units to thousandths of an em.
+      #
+      # @private
+      # @return [Float]
+      def scale_factor
+        @scale_factor ||= 1000.0 / @ttf.header.units_per_em
+      end
+
       # Perform any changes to the string that need to happen before it is
       # rendered to the canvas. Returns an array of subset "chunks", where the
       # even-numbered indices are the font subset number, and the following
@@ -204,7 +289,9 @@ module Prawn
       def encode_text(text, options = {})
         text = text.chomp
 
-        if options[:kerning]
+        if options[:gpos] && gpos?
+          encode_text_gpos(text, options)
+        elsif options[:kerning]
           last_subset = nil
           kern(text).reduce([]) do |result, element|
             if element.is_a?(Numeric)
@@ -392,6 +479,38 @@ module Prawn
           end
       end
 
+      # Encode text applying GPOS positioning. Horizontal positioning
+      # adjustments (advance deltas and offsets) are expressed as kerning
+      # numbers interleaved with the encoded strings, so the returned chunks
+      # can be shown with the TJ operator. Vertical offsets are not
+      # representable here; the full rendering path handles them.
+      def encode_text_gpos(text, options)
+        positioned = gpos_position_text(text, options[:gpos])
+
+        chunks = []
+        positioned.each_with_index do |glyph, i|
+          (subset, encoded) = encode_character(glyph[:codepoint])
+
+          if chunks.empty? || chunks.last[0] != subset
+            chunks << [subset, []]
+          end
+          chunk = chunks.last[1]
+
+          chunk << (-glyph[:x_offset] * scale_factor) if i.zero? && glyph[:x_offset] != 0
+          chunk << encoded
+
+          next_glyph = positioned[i + 1]
+          if next_glyph
+            kern =
+              -((glyph[:advance] - glyph[:orig_advance]) +
+                next_glyph[:x_offset] - glyph[:x_offset]) * scale_factor
+            chunk << kern unless kern.zero?
+          end
+        end
+
+        chunks
+      end
+
       def hmtx
         @hmtx ||= @ttf.horizontal_metrics
       end
@@ -404,10 +523,6 @@ module Prawn
         return 0.0 if code == 10
 
         @char_widths[code] ||= Integer(hmtx.widths[cmap[code]] * scale_factor)
-      end
-
-      def scale_factor
-        @scale_factor ||= 1000.0 / @ttf.header.units_per_em
       end
 
       def register(subset)
