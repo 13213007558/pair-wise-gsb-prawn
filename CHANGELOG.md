@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Floating exclusion regions in formatted text boxes
+
+`Prawn::Text::Formatted::Box` (and thus `formatted_text_box`, `text`, and
+`formatted_text`) accepts an `:exclusions` option: a list of polygons in
+absolute page coordinates that text flows around. Polygons may be concave
+and several disjoint polygons may be given. Lines that intersect a region
+are laid out in the remaining horizontal intervals of the line, so a single
+line may be split into several segments while preserving reading order,
+link annotations, and character spacing.
+
 ## PrawnPDF 2.5.0
 
 ### Full font embedding

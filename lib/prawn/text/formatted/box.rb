@@ -7,6 +7,8 @@
 # This is free software. Please see the LICENSE and COPYING files for details.
 #
 
+require_relative 'exclusion_zones'
+
 module Prawn
   module Text
     module Formatted
@@ -170,6 +172,13 @@ module Prawn
         #   The minimum font size to use when `:overflow` is set to
         #   `:shrink_to_fit` (that is the font size will not be reduced to less
         #   than this value, even if it means that some text will be cut off).
+        # @option options :exclusions [Array<Array<Array(Number, Number)>>]
+        #   Floating exclusion regions that text flows around. Each entry is
+        #   a polygon described as an array of [x, y] points in absolute
+        #   page coordinates. Polygons may be concave but must not be
+        #   self-intersecting, and multiple polygons must not overlap. Lines
+        #   intersecting a region are laid out in the remaining horizontal
+        #   intervals, so a single line may be split into several segments.
         def initialize(formatted_text, options = {})
           @inked = false
           Prawn.verify_options(valid_options, options)
@@ -204,6 +213,7 @@ module Prawn
           @rotate_around = options[:rotate_around] || :upper_left
           @single_line = options[:single_line]
           @draw_text_callback = options[:draw_text_callback]
+          @exclusions = options[:exclusions]
 
           # if the text rendering mode is :unknown, force it back to :fill
           if @mode == :unknown
@@ -413,10 +423,32 @@ module Prawn
             direction
             fallback_fonts
             draw_text_callback
+            exclusions
           ]
         end
 
         private
+
+        # Exclusion zones (converted from absolute page coordinates to
+        # bounds-relative coordinates) to flow text around, or nil when the
+        # :exclusions option was not given.
+        #
+        # @return [Prawn::Text::Formatted::ExclusionZones, nil]
+        def exclusion_zones
+          return @exclusion_zones if defined?(@exclusion_zones)
+
+          @exclusion_zones =
+            if @exclusions.nil? || @exclusions.empty?
+              nil
+            else
+              left = @document.bounds.absolute_left
+              bottom = @document.bounds.absolute_bottom
+              polygons = @exclusions.map do |polygon|
+                polygon.map { |(x, y)| [x - left, y - bottom] }
+              end
+              Prawn::Text::Formatted::ExclusionZones.new(polygons)
+            end
+        end
 
         def normalized_text(flags)
           text = normalize_encoding
