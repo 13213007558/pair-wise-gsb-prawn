@@ -16,6 +16,9 @@ module Prawn
     # Raised when Prawn is asked to draw something into a too-small box.
     CannotFit = Class.new(StandardError)
 
+    # Raised when a footnote cannot fit together with its anchor.
+    FootnoteCannotFit = Class.new(StandardError)
+
     # Raised if {#group} is called with a block that is too big to be rendered
     # in the current context.
     #
