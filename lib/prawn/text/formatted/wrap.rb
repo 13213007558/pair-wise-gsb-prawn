@@ -104,6 +104,16 @@ module Prawn
           @printed_lines << printed_fragments.map { |s|
             s.dup.force_encoding(::Encoding::UTF_8)
           }.join
+          @printed_fragments.concat(
+            fragments_this_line.map do |fragment|
+              state = fragment.format_state.dup
+              state[:text] = fragment.text
+              if state.key?(:dry_run_color)
+                state[:color] = state.delete(:dry_run_color)
+              end
+              state
+            end,
+          )
         end
 
         def word_spacing_for_this_line
@@ -138,6 +148,7 @@ module Prawn
         def initialize_wrap(array)
           @text = nil
           @arranger.format_array = array
+          @printed_fragments = []
 
           # these values will depend on the maximum value within a given line
           @line_height = 0

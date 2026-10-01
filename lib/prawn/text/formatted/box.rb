@@ -47,6 +47,10 @@ module Prawn
         # @return [Array(Number, Number)]
         attr_reader :at
 
+        # Formatted fragments printed during the previous {#render}.
+        # @return [Array<Hash>]
+        attr_reader :printed_fragments
+
         # The line height of the last line printed.
         # @return [Number]
         attr_reader :line_height
@@ -182,6 +186,7 @@ module Prawn
 
           self.original_text = formatted_text
           @text = nil
+          @printed_fragments = []
 
           @document = options[:document]
           @direction = options[:direction] || @document.text_direction
@@ -420,9 +425,11 @@ module Prawn
 
         def normalized_text(flags)
           text = normalize_encoding
-
-          text.each { |t| t.delete(:color) } if flags[:dry_run]
-
+          if flags[:dry_run]
+            text.each do |t|
+              t[:dry_run_color] = t.delete(:color) if t.key?(:color)
+            end
+          end
           text
         end
 

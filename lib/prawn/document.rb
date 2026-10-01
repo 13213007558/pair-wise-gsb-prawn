@@ -6,6 +6,7 @@ require_relative 'document/bounding_box'
 require_relative 'document/column_box'
 require_relative 'document/internals'
 require_relative 'document/span'
+require_relative 'footnotes'
 
 module Prawn
   # The `Prawn::Document` class is how you start creating a PDF document.
@@ -58,6 +59,7 @@ module Prawn
     include Prawn::Stamp
     include Prawn::SoftMask
     include Prawn::TransformationStack
+    prepend Prawn::Footnotes
 
     alias inspect to_s
 
