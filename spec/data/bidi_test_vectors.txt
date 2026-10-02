@@ -1,0 +1,486 @@
+# Bidi conformance vectors (Unicode 13.0.0)
+#
+# Generated for Prawn::Text::Bidi. Visual order and levels cross-checked
+# against ICU 78 where ICU follows the reference algorithm (ICU collapses
+# no-op explicit embeddings, which does not affect visual order).
+#
+# Format (BidiCharacterTest-style):
+#   codepoints(hex, space-separated);para_dir;para_level;levels;visual_order
+#   para_dir: 0 = LTR, 1 = RTL, 2 = auto (first strong, default LTR)
+
+# plain LTR [ltr]
+0061 0062 0063;0;0;0 0 0;0 1 2
+
+# plain LTR [rtl]
+0061 0062 0063;1;1;2 2 2;0 1 2
+
+# plain LTR [auto]
+0061 0062 0063;2;0;0 0 0;0 1 2
+
+# plain RTL Hebrew [ltr]
+05D0 05D1 05D2;0;0;1 1 1;2 1 0
+
+# plain RTL Hebrew [rtl]
+05D0 05D1 05D2;1;1;1 1 1;2 1 0
+
+# plain RTL Hebrew [auto]
+05D0 05D1 05D2;2;1;1 1 1;2 1 0
+
+# Arabic letters [ltr]
+0627 0644 0639 0631 0628 064A 0629;0;0;1 1 1 1 1 1 1;6 5 4 3 2 1 0
+
+# Arabic letters [rtl]
+0627 0644 0639 0631 0628 064A 0629;1;1;1 1 1 1 1 1 1;6 5 4 3 2 1 0
+
+# Arabic letters [auto]
+0627 0644 0639 0631 0628 064A 0629;2;1;1 1 1 1 1 1 1;6 5 4 3 2 1 0
+
+# Hebrew with European digits [ltr]
+05D0 05D1 0031 0032 0033 05D1;0;0;1 1 2 2 2 1;5 2 3 4 1 0
+
+# Hebrew with European digits [rtl]
+05D0 05D1 0031 0032 0033 05D1;1;1;1 1 2 2 2 1;5 2 3 4 1 0
+
+# Hebrew with European digits [auto]
+05D0 05D1 0031 0032 0033 05D1;2;1;1 1 2 2 2 1;5 2 3 4 1 0
+
+# Arabic with Arabic-Indic digits [ltr]
+0627 0644 0661 0662 0663 0628;0;0;1 1 2 2 2 1;5 2 3 4 1 0
+
+# Arabic with Arabic-Indic digits [rtl]
+0627 0644 0661 0662 0663 0628;1;1;1 1 2 2 2 1;5 2 3 4 1 0
+
+# Arabic with Arabic-Indic digits [auto]
+0627 0644 0661 0662 0663 0628;2;1;1 1 2 2 2 1;5 2 3 4 1 0
+
+# Arabic with European digits [ltr]
+0627 0644 0031 0032 0033 0628;0;0;1 1 2 2 2 1;5 2 3 4 1 0
+
+# Arabic with European digits [rtl]
+0627 0644 0031 0032 0033 0628;1;1;1 1 2 2 2 1;5 2 3 4 1 0
+
+# Arabic with European digits [auto]
+0627 0644 0031 0032 0033 0628;2;1;1 1 2 2 2 1;5 2 3 4 1 0
+
+# LTR with Hebrew word [ltr]
+0061 0062 0063 0020 05D0 05D1 05D2 0020 0064 0065 0066;0;0;0 0 0 0 1 1 1 0 0 0 0;0 1 2 3 6 5 4 7 8 9 10
+
+# LTR with Hebrew word [rtl]
+0061 0062 0063 0020 05D0 05D1 05D2 0020 0064 0065 0066;1;1;2 2 2 1 1 1 1 1 2 2 2;8 9 10 7 6 5 4 3 0 1 2
+
+# LTR with Hebrew word [auto]
+0061 0062 0063 0020 05D0 05D1 05D2 0020 0064 0065 0066;2;0;0 0 0 0 1 1 1 0 0 0 0;0 1 2 3 6 5 4 7 8 9 10
+
+# RTL with Latin word [ltr]
+05D0 05D1 05D2 0020 0061 0062 0063 0020 05D3 05D4 05D5;0;0;1 1 1 0 0 0 0 0 1 1 1;2 1 0 3 4 5 6 7 10 9 8
+
+# RTL with Latin word [rtl]
+05D0 05D1 05D2 0020 0061 0062 0063 0020 05D3 05D4 05D5;1;1;1 1 1 1 2 2 2 1 1 1 1;10 9 8 7 4 5 6 3 2 1 0
+
+# RTL with Latin word [auto]
+05D0 05D1 05D2 0020 0061 0062 0063 0020 05D3 05D4 05D5;2;1;1 1 1 1 2 2 2 1 1 1 1;10 9 8 7 4 5 6 3 2 1 0
+
+# LTR paragraph ending in Hebrew [ltr]
+0061 0062 0063 0020 05D0 05D1 05D2;0;0;0 0 0 0 1 1 1;0 1 2 3 6 5 4
+
+# LTR paragraph ending in Hebrew [rtl]
+0061 0062 0063 0020 05D0 05D1 05D2;1;1;2 2 2 1 1 1 1;6 5 4 3 0 1 2
+
+# LTR paragraph ending in Hebrew [auto]
+0061 0062 0063 0020 05D0 05D1 05D2;2;0;0 0 0 0 1 1 1;0 1 2 3 6 5 4
+
+# RTL paragraph ending in Latin [ltr]
+05D0 05D1 05D2 0020 0061 0062 0063;0;0;1 1 1 0 0 0 0;2 1 0 3 4 5 6
+
+# RTL paragraph ending in Latin [rtl]
+05D0 05D1 05D2 0020 0061 0062 0063;1;1;1 1 1 1 2 2 2;4 5 6 3 2 1 0
+
+# RTL paragraph ending in Latin [auto]
+05D0 05D1 05D2 0020 0061 0062 0063;2;1;1 1 1 1 2 2 2;4 5 6 3 2 1 0
+
+# parens around RTL in LTR [ltr]
+0061 0062 0063 0020 0028 05D0 05D1 05D2 0029 0020 0064 0065 0066;0;0;0 0 0 0 0 1 1 1 0 0 0 0 0;0 1 2 3 4 7 6 5 8 9 10 11 12
+
+# parens around RTL in LTR [rtl]
+0061 0062 0063 0020 0028 05D0 05D1 05D2 0029 0020 0064 0065 0066;1;1;2 2 2 1 1 1 1 1 1 1 2 2 2;10 11 12 9 8 7 6 5 4 3 0 1 2
+
+# parens around RTL in LTR [auto]
+0061 0062 0063 0020 0028 05D0 05D1 05D2 0029 0020 0064 0065 0066;2;0;0 0 0 0 0 1 1 1 0 0 0 0 0;0 1 2 3 4 7 6 5 8 9 10 11 12
+
+# parens around LTR in RTL [ltr]
+05D0 05D1 0020 0028 0061 0062 0063 0029 0020 05D2 05D3;0;0;1 1 0 0 0 0 0 0 0 1 1;1 0 2 3 4 5 6 7 8 10 9
+
+# parens around LTR in RTL [rtl]
+05D0 05D1 0020 0028 0061 0062 0063 0029 0020 05D2 05D3;1;1;1 1 1 1 2 2 2 1 1 1 1;10 9 8 7 4 5 6 3 2 1 0
+
+# parens around LTR in RTL [auto]
+05D0 05D1 0020 0028 0061 0062 0063 0029 0020 05D2 05D3;2;1;1 1 1 1 2 2 2 1 1 1 1;10 9 8 7 4 5 6 3 2 1 0
+
+# parens around RTL in RTL with trailing Latin [ltr]
+05D0 05D1 0028 05D2 05D3 0029 0061 0062 0063;0;0;1 1 1 1 1 1 0 0 0;5 4 3 2 1 0 6 7 8
+
+# parens around RTL in RTL with trailing Latin [rtl]
+05D0 05D1 0028 05D2 05D3 0029 0061 0062 0063;1;1;1 1 1 1 1 1 2 2 2;6 7 8 5 4 3 2 1 0
+
+# parens around RTL in RTL with trailing Latin [auto]
+05D0 05D1 0028 05D2 05D3 0029 0061 0062 0063;2;1;1 1 1 1 1 1 2 2 2;6 7 8 5 4 3 2 1 0
+
+# parens between L and R [ltr]
+0061 0028 0062 0029 05D0;0;0;0 0 0 0 1;0 1 2 3 4
+
+# parens between L and R [rtl]
+0061 0028 0062 0029 05D0;1;1;2 2 2 2 1;4 0 1 2 3
+
+# parens between L and R [auto]
+0061 0028 0062 0029 05D0;2;0;0 0 0 0 1;0 1 2 3 4
+
+# parens at end after R [ltr]
+0061 0020 05D0 0028 0062 0029;0;0;0 0 1 0 0 0;0 1 2 3 4 5
+
+# parens at end after R [rtl]
+0061 0020 05D0 0028 0062 0029;1;1;2 1 1 1 2 1;5 4 3 2 1 0
+
+# parens at end after R [auto]
+0061 0020 05D0 0028 0062 0029;2;0;0 0 1 0 0 0;0 1 2 3 4 5
+
+# number with separators in LTR [ltr]
+0061 0020 0031 002C 0032 0033 0034 002E 0035 0036 0020 0062;0;0;0 0 0 0 0 0 0 0 0 0 0 0;0 1 2 3 4 5 6 7 8 9 10 11
+
+# number with separators in LTR [rtl]
+0061 0020 0031 002C 0032 0033 0034 002E 0035 0036 0020 0062;1;1;2 2 2 2 2 2 2 2 2 2 2 2;0 1 2 3 4 5 6 7 8 9 10 11
+
+# number with separators in LTR [auto]
+0061 0020 0031 002C 0032 0033 0034 002E 0035 0036 0020 0062;2;0;0 0 0 0 0 0 0 0 0 0 0 0;0 1 2 3 4 5 6 7 8 9 10 11
+
+# number with separators in RTL para [ltr]
+05D0 0020 0031 002C 0032 0033 0034 002E 0035 0036 0020 05D1;0;0;1 1 2 2 2 2 2 2 2 2 1 1;11 10 2 3 4 5 6 7 8 9 1 0
+
+# number with separators in RTL para [rtl]
+05D0 0020 0031 002C 0032 0033 0034 002E 0035 0036 0020 05D1;1;1;1 1 2 2 2 2 2 2 2 2 1 1;11 10 2 3 4 5 6 7 8 9 1 0
+
+# number with separators in RTL para [auto]
+05D0 0020 0031 002C 0032 0033 0034 002E 0035 0036 0020 05D1;2;1;1 1 2 2 2 2 2 2 2 2 1 1;11 10 2 3 4 5 6 7 8 9 1 0
+
+# hyphen between digits [ltr]
+0061 0020 0031 002D 0032 0020 0062;0;0;0 0 0 0 0 0 0;0 1 2 3 4 5 6
+
+# hyphen between digits [rtl]
+0061 0020 0031 002D 0032 0020 0062;1;1;2 2 2 2 2 2 2;0 1 2 3 4 5 6
+
+# hyphen between digits [auto]
+0061 0020 0031 002D 0032 0020 0062;2;0;0 0 0 0 0 0 0;0 1 2 3 4 5 6
+
+# hyphen between digits in RTL [ltr]
+05D0 0020 0031 002D 0032 0020 05D1;0;0;1 1 2 2 2 1 1;6 5 2 3 4 1 0
+
+# hyphen between digits in RTL [rtl]
+05D0 0020 0031 002D 0032 0020 05D1;1;1;1 1 2 2 2 1 1;6 5 2 3 4 1 0
+
+# hyphen between digits in RTL [auto]
+05D0 0020 0031 002D 0032 0020 05D1;2;1;1 1 2 2 2 1 1;6 5 2 3 4 1 0
+
+# currency amount [ltr]
+0061 0020 0024 0031 002C 0030 0030 0030 0020 0062;0;0;0 0 0 0 0 0 0 0 0 0;0 1 2 3 4 5 6 7 8 9
+
+# currency amount [rtl]
+0061 0020 0024 0031 002C 0030 0030 0030 0020 0062;1;1;2 2 2 2 2 2 2 2 2 2;0 1 2 3 4 5 6 7 8 9
+
+# currency amount [auto]
+0061 0020 0024 0031 002C 0030 0030 0030 0020 0062;2;0;0 0 0 0 0 0 0 0 0 0;0 1 2 3 4 5 6 7 8 9
+
+# currency amount in RTL [ltr]
+05D0 0020 0024 0031 002C 0030 0030 0030 0020 05D1;0;0;1 1 2 2 2 2 2 2 1 1;9 8 2 3 4 5 6 7 1 0
+
+# currency amount in RTL [rtl]
+05D0 0020 0024 0031 002C 0030 0030 0030 0020 05D1;1;1;1 1 2 2 2 2 2 2 1 1;9 8 2 3 4 5 6 7 1 0
+
+# currency amount in RTL [auto]
+05D0 0020 0024 0031 002C 0030 0030 0030 0020 05D1;2;1;1 1 2 2 2 2 2 2 1 1;9 8 2 3 4 5 6 7 1 0
+
+# percent [ltr]
+0061 0020 0031 0030 0025 0020 0062;0;0;0 0 0 0 0 0 0;0 1 2 3 4 5 6
+
+# percent [rtl]
+0061 0020 0031 0030 0025 0020 0062;1;1;2 2 2 2 2 2 2;0 1 2 3 4 5 6
+
+# percent [auto]
+0061 0020 0031 0030 0025 0020 0062;2;0;0 0 0 0 0 0 0;0 1 2 3 4 5 6
+
+# percent in RTL [ltr]
+05D0 0020 0031 0030 0025 0020 05D1;0;0;1 1 2 2 2 1 1;6 5 2 3 4 1 0
+
+# percent in RTL [rtl]
+05D0 0020 0031 0030 0025 0020 05D1;1;1;1 1 2 2 2 1 1;6 5 2 3 4 1 0
+
+# percent in RTL [auto]
+05D0 0020 0031 0030 0025 0020 05D1;2;1;1 1 2 2 2 1 1;6 5 2 3 4 1 0
+
+# LRE around Hebrew [ltr]
+0061 202A 05D0 05D1 202C 0062;0;0;0 3 3 3 0 0;0 3 2 1 4 5
+
+# LRE around Hebrew [rtl]
+0061 202A 05D0 05D1 202C 0062;1;1;2 3 3 3 2 2;0 3 2 1 4 5
+
+# LRE around Hebrew [auto]
+0061 202A 05D0 05D1 202C 0062;2;0;0 3 3 3 0 0;0 3 2 1 4 5
+
+# RLE around Latin [ltr]
+0061 202B 0062 0063 202C 0064;0;0;0 2 2 2 0 0;0 1 2 3 4 5
+
+# RLE around Latin [rtl]
+0061 202B 0062 0063 202C 0064;1;1;2 4 4 4 2 2;0 1 2 3 4 5
+
+# RLE around Latin [auto]
+0061 202B 0062 0063 202C 0064;2;0;0 2 2 2 0 0;0 1 2 3 4 5
+
+# LRE around Latin in RTL [ltr]
+05D0 202A 0061 0062 202C 05D1;0;0;1 2 2 2 1 1;5 4 1 2 3 0
+
+# LRE around Latin in RTL [rtl]
+05D0 202A 0061 0062 202C 05D1;1;1;1 2 2 2 1 1;5 4 1 2 3 0
+
+# LRE around Latin in RTL [auto]
+05D0 202A 0061 0062 202C 05D1;2;1;1 2 2 2 1 1;5 4 1 2 3 0
+
+# RLE around Hebrew in RTL [ltr]
+05D0 202B 05D1 05D2 202C 05D3;0;0;1 1 1 1 1 1;5 4 3 2 1 0
+
+# RLE around Hebrew in RTL [rtl] (LEVEL-DIFF)
+05D0 202B 05D1 05D2 202C 05D3;1;1;1 3 3 3 1 1;5 4 3 2 1 0
+
+# RLE around Hebrew in RTL [auto] (LEVEL-DIFF)
+05D0 202B 05D1 05D2 202C 05D3;2;1;1 3 3 3 1 1;5 4 3 2 1 0
+
+# nested LRE RLE [ltr]
+0061 202A 0062 202B 05D0 202C 0063 202C 0064;0;0;0 2 2 3 3 2 2 0 0;0 1 2 4 3 5 6 7 8
+
+# nested LRE RLE [rtl]
+0061 202A 0062 202B 05D0 202C 0063 202C 0064;1;1;2 2 2 3 3 2 2 2 2;0 1 2 4 3 5 6 7 8
+
+# nested LRE RLE [auto]
+0061 202A 0062 202B 05D0 202C 0063 202C 0064;2;0;0 2 2 3 3 2 2 0 0;0 1 2 4 3 5 6 7 8
+
+# nested RLE LRE [ltr]
+0061 202B 05D0 202A 0062 202C 202C 0064;0;0;0 1 1 2 2 0 0 0;0 3 4 2 1 5 6 7
+
+# nested RLE LRE [rtl]
+0061 202B 05D0 202A 0062 202C 202C 0064;1;1;2 3 3 4 4 2 2 2;0 3 4 2 1 5 6 7
+
+# nested RLE LRE [auto]
+0061 202B 05D0 202A 0062 202C 202C 0064;2;0;0 1 1 2 2 0 0 0;0 3 4 2 1 5 6 7
+
+# LRO makes Hebrew LTR [ltr] (LEVEL-DIFF)
+0061 202D 05D0 05D1 202C 0062;0;0;0 2 2 2 0 0;0 1 2 3 4 5
+
+# LRO makes Hebrew LTR [rtl]
+0061 202D 05D0 05D1 202C 0062;1;1;2 2 2 2 2 2;0 1 2 3 4 5
+
+# LRO makes Hebrew LTR [auto] (LEVEL-DIFF)
+0061 202D 05D0 05D1 202C 0062;2;0;0 2 2 2 0 0;0 1 2 3 4 5
+
+# RLO makes Latin RTL [ltr]
+0061 202E 0062 0063 202C 0064;0;0;0 1 1 1 0 0;0 3 2 1 4 5
+
+# RLO makes Latin RTL [rtl]
+0061 202E 0062 0063 202C 0064;1;1;2 3 3 3 2 2;0 3 2 1 4 5
+
+# RLO makes Latin RTL [auto]
+0061 202E 0062 0063 202C 0064;2;0;0 1 1 1 0 0;0 3 2 1 4 5
+
+# RLO in RTL para [ltr]
+05D0 202E 05D1 05D2 202C 05D3;0;0;1 1 1 1 1 1;5 4 3 2 1 0
+
+# RLO in RTL para [rtl] (LEVEL-DIFF)
+05D0 202E 05D1 05D2 202C 05D3;1;1;1 3 3 3 1 1;5 4 3 2 1 0
+
+# RLO in RTL para [auto] (LEVEL-DIFF)
+05D0 202E 05D1 05D2 202C 05D3;2;1;1 3 3 3 1 1;5 4 3 2 1 0
+
+# LRI around Hebrew [ltr]
+0061 2066 05D0 05D1 2069 0062;0;0;0 0 3 3 0 0;0 1 3 2 4 5
+
+# LRI around Hebrew [rtl]
+0061 2066 05D0 05D1 2069 0062;1;1;2 2 3 3 2 2;0 1 3 2 4 5
+
+# LRI around Hebrew [auto]
+0061 2066 05D0 05D1 2069 0062;2;0;0 0 3 3 0 0;0 1 3 2 4 5
+
+# RLI around Hebrew [ltr]
+0061 2067 05D0 05D1 2069 0062;0;0;0 0 1 1 0 0;0 1 3 2 4 5
+
+# RLI around Hebrew [rtl]
+0061 2067 05D0 05D1 2069 0062;1;1;2 2 3 3 2 2;0 1 3 2 4 5
+
+# RLI around Hebrew [auto]
+0061 2067 05D0 05D1 2069 0062;2;0;0 0 1 1 0 0;0 1 3 2 4 5
+
+# LRI around Latin in RTL [ltr]
+05D0 2066 0061 0062 2069 05D1;0;0;1 1 2 2 1 1;5 4 2 3 1 0
+
+# LRI around Latin in RTL [rtl]
+05D0 2066 0061 0062 2069 05D1;1;1;1 1 2 2 1 1;5 4 2 3 1 0
+
+# LRI around Latin in RTL [auto]
+05D0 2066 0061 0062 2069 05D1;2;1;1 1 2 2 1 1;5 4 2 3 1 0
+
+# FSI with RTL content [ltr]
+0061 2068 05D0 05D1 2069 0062;0;0;0 0 1 1 0 0;0 1 3 2 4 5
+
+# FSI with RTL content [rtl]
+0061 2068 05D0 05D1 2069 0062;1;1;2 2 3 3 2 2;0 1 3 2 4 5
+
+# FSI with RTL content [auto]
+0061 2068 05D0 05D1 2069 0062;2;0;0 0 1 1 0 0;0 1 3 2 4 5
+
+# FSI with LTR content [ltr] (LEVEL-DIFF)
+0061 2068 0062 0063 2069 0064;0;0;0 0 2 2 0 0;0 1 2 3 4 5
+
+# FSI with LTR content [rtl]
+0061 2068 0062 0063 2069 0064;1;1;2 2 2 2 2 2;0 1 2 3 4 5
+
+# FSI with LTR content [auto] (LEVEL-DIFF)
+0061 2068 0062 0063 2069 0064;2;0;0 0 2 2 0 0;0 1 2 3 4 5
+
+# nested isolates [ltr]
+0061 2066 05D0 2067 05D1 2069 2069 0062;0;0;0 0 3 2 3 2 0 0;0 1 2 3 4 5 6 7
+
+# nested isolates [rtl]
+0061 2066 05D0 2067 05D1 2069 2069 0062;1;1;2 2 3 2 3 2 2 2;0 1 2 3 4 5 6 7
+
+# nested isolates [auto]
+0061 2066 05D0 2067 05D1 2069 2069 0062;2;0;0 0 3 2 3 2 0 0;0 1 2 3 4 5 6 7
+
+# unterminated RLI [ltr]
+0061 2067 05D0 05D1;0;0;0 0 1 1;0 1 3 2
+
+# unterminated RLI [rtl]
+0061 2067 05D0 05D1;1;1;2 1 3 3;3 2 1 0
+
+# unterminated RLI [auto]
+0061 2067 05D0 05D1;2;0;0 0 1 1;0 1 3 2
+
+# two isolates in RTL [ltr]
+05D0 2066 0061 0062 2069 05D1 2066 05D2 2069 05D3;0;0;1 1 2 2 1 1 1 3 1 1;9 8 7 6 5 4 2 3 1 0
+
+# two isolates in RTL [rtl]
+05D0 2066 0061 0062 2069 05D1 2066 05D2 2069 05D3;1;1;1 1 2 2 1 1 1 3 1 1;9 8 7 6 5 4 2 3 1 0
+
+# two isolates in RTL [auto]
+05D0 2066 0061 0062 2069 05D1 2066 05D2 2069 05D3;2;1;1 1 2 2 1 1 1 3 1 1;9 8 7 6 5 4 2 3 1 0
+
+# digits then Hebrew (auto para) [ltr]
+0031 0032 0033 0020 05D0 05D1 05D2;0;0;0 0 0 0 1 1 1;0 1 2 3 6 5 4
+
+# digits then Hebrew (auto para) [rtl]
+0031 0032 0033 0020 05D0 05D1 05D2;1;1;2 2 2 1 1 1 1;6 5 4 3 0 1 2
+
+# digits then Hebrew (auto para) [auto]
+0031 0032 0033 0020 05D0 05D1 05D2;2;1;2 2 2 1 1 1 1;6 5 4 3 0 1 2
+
+# digits then Latin (auto para) [ltr]
+0031 0032 0033 0020 0061 0062 0063;0;0;0 0 0 0 0 0 0;0 1 2 3 4 5 6
+
+# digits then Latin (auto para) [rtl]
+0031 0032 0033 0020 0061 0062 0063;1;1;2 2 2 1 2 2 2;4 5 6 3 0 1 2
+
+# digits then Latin (auto para) [auto]
+0031 0032 0033 0020 0061 0062 0063;2;0;0 0 0 0 0 0 0;0 1 2 3 4 5 6
+
+# neutrals then Hebrew (auto para) [ltr]
+0028 0029 0020 05D0 05D1;0;0;0 0 0 1 1;0 1 2 4 3
+
+# neutrals then Hebrew (auto para) [rtl]
+0028 0029 0020 05D0 05D1;1;1;1 1 1 1 1;4 3 2 1 0
+
+# neutrals then Hebrew (auto para) [auto]
+0028 0029 0020 05D0 05D1;2;1;1 1 1 1 1;4 3 2 1 0
+
+# trailing spaces LTR [ltr]
+0061 0062 0063 0020 0020;0;0;0 0 0 0 0;0 1 2 3 4
+
+# trailing spaces LTR [rtl]
+0061 0062 0063 0020 0020;1;1;2 2 2 1 1;4 3 0 1 2
+
+# trailing spaces LTR [auto]
+0061 0062 0063 0020 0020;2;0;0 0 0 0 0;0 1 2 3 4
+
+# trailing spaces RTL [ltr]
+05D0 05D1 0020 0020;0;0;1 1 0 0;1 0 2 3
+
+# trailing spaces RTL [rtl]
+05D0 05D1 0020 0020;1;1;1 1 1 1;3 2 1 0
+
+# trailing spaces RTL [auto]
+05D0 05D1 0020 0020;2;1;1 1 1 1;3 2 1 0
+
+# trailing spaces mixed [ltr]
+0061 0062 0063 0020 005C 0075 0030 0035 0044 0030 005C 0075 0030 0035 0044 0031 0020 0020;0;0;0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17
+
+# trailing spaces mixed [rtl]
+0061 0062 0063 0020 005C 0075 0030 0035 0044 0030 005C 0075 0030 0035 0044 0031 0020 0020;1;1;2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 1 1;17 16 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+
+# trailing spaces mixed [auto]
+0061 0062 0063 0020 005C 0075 0030 0035 0044 0030 005C 0075 0030 0035 0044 0031 0020 0020;2;0;0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17
+
+# Hebrew with vowel point [ltr]
+05D0 05B0 05D1;0;0;1 1 1;2 1 0
+
+# Hebrew with vowel point [rtl]
+05D0 05B0 05D1;1;1;1 1 1;2 1 0
+
+# Hebrew with vowel point [auto]
+05D0 05B0 05D1;2;1;1 1 1;2 1 0
+
+# NSM after Hebrew between Latin [ltr]
+0061 05D0 05B0 0062;0;0;0 1 1 0;0 2 1 3
+
+# NSM after Hebrew between Latin [rtl]
+0061 05D0 05B0 0062;1;1;2 1 1 2;3 2 1 0
+
+# NSM after Hebrew between Latin [auto]
+0061 05D0 05B0 0062;2;0;0 1 1 0;0 2 1 3
+
+# Hebrew greeting with Latin and digits [ltr]
+05E9 05DC 05D5 05DD 0020 0068 0065 006C 006C 006F 0020 0031 0032 0033;0;0;1 1 1 1 0 0 0 0 0 0 0 0 0 0;3 2 1 0 4 5 6 7 8 9 10 11 12 13
+
+# Hebrew greeting with Latin and digits [rtl]
+05E9 05DC 05D5 05DD 0020 0068 0065 006C 006C 006F 0020 0031 0032 0033;1;1;1 1 1 1 1 2 2 2 2 2 2 2 2 2;5 6 7 8 9 10 11 12 13 4 3 2 1 0
+
+# Hebrew greeting with Latin and digits [auto]
+05E9 05DC 05D5 05DD 0020 0068 0065 006C 006C 006F 0020 0031 0032 0033;2;1;1 1 1 1 1 2 2 2 2 2 2 2 2 2;5 6 7 8 9 10 11 12 13 4 3 2 1 0
+
+# Latin greeting with Hebrew and digits [ltr]
+0068 0065 006C 006C 006F 0020 005C 0075 0030 0035 0045 0039 005C 0075 0030 0035 0044 0043 005C 0075 0030 0035 0044 0035 005C 0075 0030 0035 0044 0044 0020 0031 0032 0033;0;0;0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33
+
+# Latin greeting with Hebrew and digits [rtl]
+0068 0065 006C 006C 006F 0020 005C 0075 0030 0035 0045 0039 005C 0075 0030 0035 0044 0043 005C 0075 0030 0035 0044 0035 005C 0075 0030 0035 0044 0044 0020 0031 0032 0033;1;1;2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2;0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33
+
+# Latin greeting with Hebrew and digits [auto]
+0068 0065 006C 006C 006F 0020 005C 0075 0030 0035 0045 0039 005C 0075 0030 0035 0044 0043 005C 0075 0030 0035 0044 0035 005C 0075 0030 0035 0044 0044 0020 0031 0032 0033;2;0;0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33
+
+# Arabic greeting with Latin and digits [ltr]
+0645 0631 062D 0628 0627 0020 0068 0065 006C 006C 006F 0020 0031 0032 0033;0;0;1 1 1 1 1 0 0 0 0 0 0 0 0 0 0;4 3 2 1 0 5 6 7 8 9 10 11 12 13 14
+
+# Arabic greeting with Latin and digits [rtl]
+0645 0631 062D 0628 0627 0020 0068 0065 006C 006C 006F 0020 0031 0032 0033;1;1;1 1 1 1 1 1 2 2 2 2 2 2 2 2 2;6 7 8 9 10 11 12 13 14 5 4 3 2 1 0
+
+# Arabic greeting with Latin and digits [auto]
+0645 0631 062D 0628 0627 0020 0068 0065 006C 006C 006F 0020 0031 0032 0033;2;1;1 1 1 1 1 1 2 2 2 2 2 2 2 2 2;6 7 8 9 10 11 12 13 14 5 4 3 2 1 0
+
+# alternating Latin digit Hebrew [ltr]
+0061 0031 05D0 0032;0;0;0 0 1 2;0 1 3 2
+
+# alternating Latin digit Hebrew [rtl]
+0061 0031 05D0 0032;1;1;2 2 1 2;3 2 0 1
+
+# alternating Latin digit Hebrew [auto]
+0061 0031 05D0 0032;2;0;0 0 1 2;0 1 3 2
+
+# Hebrew with geresh punctuation [ltr]
+05D0 05F3 05D1;0;0;1 1 1;2 1 0
+
+# Hebrew with geresh punctuation [rtl]
+05D0 05F3 05D1;1;1;1 1 1;2 1 0
+
+# Hebrew with geresh punctuation [auto]
+05D0 05F3 05D1;2;1;1 1 1;2 1 0

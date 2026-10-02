@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Added Unicode bidirectional text layout
+
+Text methods (`text`, `text_box`, `formatted_text`, `formatted_text_box`)
+accept a new `bidi: true` option that reorders mixed right-to-left (e.g.
+Hebrew, Arabic) and left-to-right text for display using the Unicode
+Bidirectional Algorithm (UAX #9, character data pinned to Unicode 13.0.0).
+Explicit embeddings and overrides (LRE/RLE/LRO/RLO/PDF), directional
+isolates (LRI/RLI/FSI/PDI), paired brackets, and automatic paragraph
+direction detection are supported. Line-level rules are re-applied after
+wrapping, links and other annotations are split along visual segments,
+and the logical text is preserved for text extraction. Arabic shaping is
+not performed.
+
+The algorithm is also available directly through `Prawn::Text::Bidi`.
+
 ## PrawnPDF 2.5.0
 
 ### Full font embedding

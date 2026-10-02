@@ -141,6 +141,15 @@ module Prawn
         # @option options :direction [:ltr, :rtl]
         #   (value of document.text_direction)
         #   Direction of the text (left-to-right or right-to-left).
+        # @option options :bidi [Boolean] (false)
+        #   Enable Unicode bidirectional text layout (UAX #9). Mixed
+        #   right-to-left (e.g. Hebrew, Arabic) and left-to-right text is
+        #   reordered for display, handling explicit embeddings, overrides,
+        #   directional isolates, and paired brackets. The paragraph
+        #   direction is taken from the :direction option, or detected from
+        #   the first strong character when it is not given. The logical
+        #   text is kept for text extraction. Note that Arabic shaping is
+        #   not performed.
         # @option options :fallback_fonts [Array<String>]
         #   An array of font names. Each name must be the name of an AFM font or
         #   the name that was used to register a family of external fonts (see
@@ -336,7 +345,9 @@ module Prawn
             draw_fragment_underlays(fragment)
 
             @document.word_spacing(word_spacing) do
-              if @draw_text_callback
+              if fragment.bidi_level && fragment.bidi_level.odd?
+                draw_rtl_bidi_fragment_text(fragment, x, y, word_spacing)
+              elsif @draw_text_callback
                 @draw_text_callback.call(
                   fragment.text,
                   at: [x, y],
@@ -353,6 +364,46 @@ module Prawn
 
             draw_fragment_overlays(fragment)
           end
+        end
+
+        # Draw the text of a right-to-left bidi fragment.
+        #
+        # Grapheme clusters are emitted in logical order, each at its
+        # visual position, so that text extraction from the PDF keeps the
+        # logical character order while the glyphs display in visual
+        # order.
+        #
+        # @private
+        def draw_rtl_bidi_fragment_text(fragment, x, y, word_spacing)
+          clusters = fragment.text.scan(/\X/)
+          widths = clusters.map { |cluster|
+            bidi_cluster_width(cluster, word_spacing)
+          }
+
+          cluster_x = x + widths.sum
+          clusters.each_with_index do |cluster, index|
+            cluster_x -= widths[index]
+            if @draw_text_callback
+              @draw_text_callback.call(
+                cluster,
+                at: [cluster_x, y],
+                kerning: false,
+              )
+            else
+              @document.draw_text!(
+                cluster,
+                at: [cluster_x, y],
+                kerning: false,
+              )
+            end
+          end
+        end
+
+        # @private
+        def bidi_cluster_width(cluster, word_spacing)
+          width = @document.width_of(cluster, kerning: false)
+          width += word_spacing if cluster == ' '
+          width
         end
 
         # @group Extension API
@@ -411,6 +462,7 @@ module Prawn
             mode single_line
             document
             direction
+            bidi
             fallback_fonts
             draw_text_callback
           ]

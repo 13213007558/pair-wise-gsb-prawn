@@ -20,8 +20,9 @@ some of the important features we provide:
 * Tools for rendering repeatable content (i.e headers, footers, and page
   numbers)
 * Comprehensive internationalization features, including full support for UTF-8
-  based fonts, right-to-left text rendering, fallback font support, and extension
-  points for customizable text wrapping.
+  based fonts, right-to-left text rendering, Unicode bidirectional text layout
+  (UAX #9), fallback font support, and extension points for customizable text
+  wrapping.
 * Support for PDF outlines for document navigation
 * Low level PDF features, allowing users to create custom extensions by dropping
   down all the way to the PDF object tree layer. (Mostly useful to those with

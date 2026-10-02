@@ -18,6 +18,13 @@ module Prawn
         attr_accessor :left
         attr_accessor :baseline
 
+        # Bidi embedding level of this fragment when the text box runs in
+        # bidirectional mode (nil otherwise). Odd levels are right-to-left
+        # runs.
+        #
+        # @return [Integer, nil]
+        attr_accessor :bidi_level
+
         # @param text [String]
         # @param format_state [Hash{Symbol => any}]
         # @param document [Prawn::Documnt]

@@ -111,6 +111,15 @@ module Prawn
     #   if you do not want indenting.
     # @option options :direction [:ltr, :rtl] (value of document.text_direction)
     #   Direction of the text.
+    # @option options :bidi [Boolean] (false)
+    #   Enable Unicode bidirectional text layout (UAX #9). Mixed
+    #   right-to-left (e.g. Hebrew, Arabic) and left-to-right text is
+    #   reordered for display, handling explicit embeddings, overrides,
+    #   directional isolates, and paired brackets. The paragraph
+    #   direction is taken from the :direction option, or detected from
+    #   the first strong character when it is not given. The logical
+    #   text is kept for text extraction. Note that Arabic shaping is
+    #   not performed.
     # @option options :fallback_fonts [Array<String>]
     #   An array of font names. Each name must be the name of an AFM font or the
     #   name that was used to register a family of TTF fonts (see
@@ -223,6 +232,15 @@ module Prawn
     #   if you do not want indenting.
     # @option options :direction [:ltr, :rtl] (value of document.text_direction)
     #   Direction of the text.
+    # @option options :bidi [Boolean] (false)
+    #   Enable Unicode bidirectional text layout (UAX #9). Mixed
+    #   right-to-left (e.g. Hebrew, Arabic) and left-to-right text is
+    #   reordered for display, handling explicit embeddings, overrides,
+    #   directional isolates, and paired brackets. The paragraph
+    #   direction is taken from the :direction option, or detected from
+    #   the first strong character when it is not given. The logical
+    #   text is kept for text extraction. Note that Arabic shaping is
+    #   not performed.
     # @option options :fallback_fonts [Array<String>]
     #   An array of font names. Each name must be the name of an AFM font or the
     #   name that was used to register a family of TTF fonts (see
@@ -438,6 +456,15 @@ module Prawn
     #   family.
     # @option options :direction [:ltr, :rtl] (value of document.text_direction)
     #   Direction of the text.
+    # @option options :bidi [Boolean] (false)
+    #   Enable Unicode bidirectional text layout (UAX #9). Mixed
+    #   right-to-left (e.g. Hebrew, Arabic) and left-to-right text is
+    #   reordered for display, handling explicit embeddings, overrides,
+    #   directional isolates, and paired brackets. The paragraph
+    #   direction is taken from the :direction option, or detected from
+    #   the first strong character when it is not given. The logical
+    #   text is kept for text extraction. Note that Arabic shaping is
+    #   not performed.
     # @option options :fallback_fonts [Array<String>]
     #   An array of font names. Each name must be the name of an AFM font or the
     #   name that was used to register a family of TTF fonts (see
@@ -533,6 +560,15 @@ module Prawn
     #   family.
     # @option options :direction [:ltr, :rtl] (value of document.text_direction)
     #   Direction of the text.
+    # @option options :bidi [Boolean] (false)
+    #   Enable Unicode bidirectional text layout (UAX #9). Mixed
+    #   right-to-left (e.g. Hebrew, Arabic) and left-to-right text is
+    #   reordered for display, handling explicit embeddings, overrides,
+    #   directional isolates, and paired brackets. The paragraph
+    #   direction is taken from the :direction option, or detected from
+    #   the first strong character when it is not given. The logical
+    #   text is kept for text extraction. Note that Arabic shaping is
+    #   not performed.
     # @option options :fallback_fonts [Array<String>]
     #   An array of font names. Each name must be the name of an AFM font or the
     #   name that was used to register a family of TTF fonts (see
