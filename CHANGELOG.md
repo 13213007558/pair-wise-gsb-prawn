@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Page-bottom footnotes
+
+Added `Prawn::Footnotes`: footnotes registered with `footnote_ref` are
+collected at the bottom of the page on which their reference marker is
+printed. Reserving room for a footnote can push body lines to the next page,
+in which case the footnote follows its marker. Multiple footnotes per page
+are stacked in marker order, and footnotes taller than one page are split
+across pages. Unbreakable footnote content taller than a page raises
+`Prawn::Errors::CannotFit`.
+
 ## PrawnPDF 2.5.0
 
 ### Full font embedding
