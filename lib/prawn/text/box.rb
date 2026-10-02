@@ -47,6 +47,9 @@ module Prawn
     #   The width of the box.
     # @option options :height [Number] (default_height())
     #   The height of the box.
+    # @option options :exclusion_polygons [Array<Array<Array(Number, Number)>>]
+    #   Polygons in text-box coordinates that text flows around. A single
+    #   polygon may be passed without the outer array.
     # @option options :direction [:ltr, :rtl] (value of document.text_direction)
     #   Direction of the text (left-to-right or right-to-left).
     # @option options :fallback_fonts [Array<String>]

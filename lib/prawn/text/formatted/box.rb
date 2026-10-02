@@ -138,6 +138,9 @@ module Prawn
         #   The width of the box.
         # @option options :height [Number] (default_height())
         #   The height of the box.
+        # @option options :exclusion_polygons [Array<Array<Array(Number, Number)>>]
+        #   Polygons in text-box coordinates whose area text must flow around.
+        #   A single polygon may be passed without wrapping it in an outer array.
         # @option options :direction [:ltr, :rtl]
         #   (value of document.text_direction)
         #   Direction of the text (left-to-right or right-to-left).
@@ -179,6 +182,9 @@ module Prawn
 
           @overflow = options[:overflow] || :truncate
           @disable_wrap_by_char = options[:disable_wrap_by_char]
+          exclusions = options[:exclusion_polygons] || options[:exclude_polygons]
+          @exclusion_polygons =
+            exclusions && Prawn::Text::Formatted::ExclusionPolygons.new(exclusions)
 
           self.original_text = formatted_text
           @text = nil
@@ -300,23 +306,26 @@ module Prawn
         # @param accumulated_width [Number]
         # @param line_width [Number]
         # @param word_spacing [Number]
+        # @param region_left [Number]
+        # @param region_width [Number]
         # @return [void]
         def draw_fragment(
-          fragment, accumulated_width = 0, line_width = 0, word_spacing = 0
+          fragment, accumulated_width = 0, line_width = 0,
+          word_spacing = 0, region_left: @at[0], region_width: @width
         )
           case @align
           when :left
-            x = @at[0]
+            x = region_left
           when :center
-            x = @at[0] + (@width * 0.5) - (line_width * 0.5)
+            x = region_left + (region_width * 0.5) - (line_width * 0.5)
           when :right
-            x = @at[0] + @width - line_width
+            x = region_left + region_width - line_width
           when :justify
             x =
               if @direction == :ltr
-                @at[0]
+                region_left
               else
-                @at[0] + @width - line_width
+                region_left + region_width - line_width
               end
           else
             raise ArgumentError,
@@ -412,6 +421,7 @@ module Prawn
             document
             direction
             fallback_fonts
+            exclusion_polygons exclude_polygons
             draw_text_callback
           ]
         end

@@ -35,6 +35,8 @@ module Prawn
         attr_reader :max_descender
         attr_reader :max_ascender
         attr_reader :finalized
+        attr_reader :line_fragments
+        attr_reader :segments
         attr_accessor :consumed
 
         # The following present only for testing purposes
@@ -45,6 +47,9 @@ module Prawn
         def initialize(document, options = {})
           @document = document
           @fragments = []
+          @line_fragments = []
+          @segments = []
+          @retrieved_line_fragments_count = 0
           @unconsumed = []
           @kerning = options[:kerning]
         end
@@ -102,7 +107,7 @@ module Prawn
           @finalized = true
 
           omit_trailing_whitespace_from_line_width
-          @fragments = []
+          segment_fragments = []
           @consumed.each do |hash|
             text = hash[:text]
             format_state = hash.dup
@@ -115,7 +120,15 @@ module Prawn
             @fragments << fragment
             self.fragment_measurements = fragment
             self.line_measurement_maximums = fragment
+            segment_fragments << fragment
           end
+          @fragments = segment_fragments
+          @line_fragments.concat(segment_fragments)
+          @segments << {
+            fragments: segment_fragments,
+            width: segment_fragments.sum(&:width),
+            space_count: segment_fragments.sum(&:space_count),
+          }
         end
 
         # Set new fragment array.
@@ -141,6 +154,17 @@ module Prawn
           @max_descender = 0
           @max_ascender = 0
 
+          @consumed = []
+          @fragments = []
+          @line_fragments = []
+          @segments = []
+          @retrieved_line_fragments_count = 0
+        end
+
+        # Prepare for another segment of the current logical line. Existing
+        # finalized fragments remain available as the complete line.
+        def initialize_segment
+          @finalized = false
           @consumed = []
           @fragments = []
         end
@@ -271,7 +295,9 @@ module Prawn
             raise NotFinalized, 'Lines must be finalized before fragments can be retrieved'
           end
 
-          @fragments.shift
+          fragment = @fragments.shift
+          @retrieved_line_fragments_count += 1 if fragment
+          fragment
         end
 
         # Repack remaining fragments.
@@ -279,13 +305,35 @@ module Prawn
         # @return [void]
         def repack_unretrieved
           new_unconsumed = []
+          @line_fragments.shift(@retrieved_line_fragments_count)
           # rubocop: disable Lint/AssignmentInCondition
-          while fragment = retrieve_fragment
+          while fragment = retrieve_line_fragment
             # rubocop: enable Lint/AssignmentInCondition
             fragment.include_trailing_white_space!
             new_unconsumed << fragment.format_state.merge(text: fragment.text)
           end
           @unconsumed = new_unconsumed.concat(@unconsumed)
+        end
+
+        # Restore unconsumed text when a trial multi-segment layout is
+        # recalculated with a different line height.
+        def snapshot_unconsumed
+          @unconsumed.map(&:dup)
+        end
+
+        def restore_unconsumed(unconsumed)
+          initialize_line
+          @unconsumed = unconsumed.map(&:dup)
+        end
+
+        # Get the next fragment from one line segment. Unlike
+        # #retrieve_fragment, this does not clear the complete line.
+        def retrieve_line_fragment
+          unless finalized
+            raise NotFinalized, 'Lines must be finalized before fragments can be retrieved'
+          end
+
+          @line_fragments.shift
         end
 
         # Get font variant from fragment styles.

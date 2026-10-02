@@ -45,7 +45,11 @@ module Prawn
         # @option options :arranger [Prawn::Text::Formatted::Arranger]
         # @return [String]
         def wrap_line(options)
-          initialize_line(options)
+          if options[:continue_line]
+            initialize_segment(options)
+          else
+            initialize_line(options)
+          end
 
           # rubocop: disable Lint/AssignmentInCondition
           while fragment = @arranger.next_string
@@ -227,6 +231,26 @@ module Prawn
 
           @arranger = options[:arranger]
           @arranger.initialize_line
+
+          @newline_encountered = false
+          @line_full = false
+        end
+
+        def initialize_segment(options)
+          @document = options[:document]
+          @kerning = options[:kerning]
+          @width = options[:width]
+          @disable_wrap_by_char = options[:disable_wrap_by_char]
+
+          @accumulated_width = 0
+          @line_empty = true
+          @line_contains_more_than_one_word = true
+          @previous_fragment = nil
+          @previous_fragment_ended_with_breakable = nil
+          @previous_fragment_output_without_last_word = nil
+
+          @arranger = options[:arranger]
+          @arranger.initialize_segment
 
           @newline_encountered = false
           @line_full = false

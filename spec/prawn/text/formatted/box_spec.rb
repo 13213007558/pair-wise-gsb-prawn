@@ -873,4 +873,164 @@ describe Prawn::Text::Formatted::Box do
       )
     end
   end
+
+  describe 'polygon exclusions' do
+    let(:polygon) do
+      [
+        [40, 500], [100, 500], [100, 460], [160, 460],
+        [160, 500], [220, 500], [220, 400], [40, 400],
+      ]
+    end
+
+    let(:formatted_text) do
+      [
+        { text: 'Aaaa Bbbb Cccc Dddd Eeee Ffff Gggg Hhhh Iiii Jjjj Kk ' },
+        {
+          text: 'link-that-continues',
+          link: 'http://example.com',
+          styles: [:underline],
+        },
+        { text: ' Kkkk Llll Mmmm Nnnn Oooo Pppp Qqqq Rrrr Ssss Tttt Uuuu ' },
+        { text: 'Vvvv Wwww Xxxx Yyyy Zzzz more extra leftover text' },
+      ]
+    end
+
+    def fragments_for(fragments = [])
+      callback = Object.new
+      callback.define_singleton_method(:render_in_front) do |fragment|
+        fragments << fragment
+      end
+      text = formatted_text.map { |hash| hash.merge(callback: callback) }
+      yield(text)
+      fragments
+    end
+
+    def intersects_polygon?(fragment, polygon)
+      left, bottom, right, top = fragment.bounding_box
+      return false if fragment.text.strip.empty? || fragment.width.zero?
+
+      Prawn::Text::Formatted::ExclusionPolygons
+        .new([polygon])
+        .intersects_rectangle?(left, bottom, right, top)
+    end
+
+    it 'continues one formatted line through disjoint concave-polygon intervals' do
+      drawn = fragments_for do |text|
+        pdf.formatted_text_box(
+          text,
+          at: [0, 500],
+          width: 300,
+          height: 120,
+          size: 12,
+          exclusion_polygons: polygon,
+        )
+      end
+
+      first_baseline = drawn.first.baseline
+      first_line = drawn.take_while { |fragment|
+        fragment.baseline == first_baseline
+      }
+
+      expect(first_line.map(&:text).join).to eq('AaaaBbbb CcccDddd Eeee')
+      expect(first_line.map(&:left)).to eq([0, 100, 220])
+      expect(first_line.map(&:right)).to all(be <= 300)
+    end
+
+    it 'preserves styles and links when a fragment crosses intervals' do
+      allow(pdf).to receive(:link_annotation)
+      linked_text = [
+        { text: 'Aaaa Bbbb Cccc Dddd Eeee Ffff Gggg Hhhh ' },
+        {
+          text: 'link-that-continues',
+          link: 'http://example.com',
+          styles: [:underline],
+        },
+        { text: ' text keeps flowing across the intervals' },
+      ]
+      drawn = []
+      callback = Object.new
+      callback.define_singleton_method(:render_in_front) do |fragment|
+        drawn << fragment
+      end
+
+      pdf.formatted_text_box(
+        linked_text.map { |hash| hash.merge(callback: callback) },
+          at: [0, 500],
+          width: 300,
+          height: 120,
+          size: 12,
+          exclusion_polygons: polygon,
+        )
+
+      linked = drawn.select { |fragment| fragment.link == 'http://example.com' }
+
+      expect(linked.length).to be >= 2
+      expect(linked.map(&:text).join).to eq('link-that-continues')
+      expect(linked).to all(have_attributes(styles: [:underline]))
+      expect(pdf).to have_received(:link_annotation).at_least(2).times
+    end
+
+    it 'returns unplaced text' do
+      leftover = pdf.formatted_text_box(
+        formatted_text,
+        at: [0, 500],
+        width: 300,
+        height: 90,
+        size: 12,
+        exclusion_polygons: polygon,
+      )
+
+      expect(leftover.join { |fragment| fragment[:text] }).to include('leftover')
+    end
+
+    it 'keeps styles and links on unplaced fragments' do
+      text = formatted_text.dup
+      text[2][:text] = text[2][:text] + text[3][:text] + ' '
+      text[3] = {
+        text: 'unplaced link',
+        link: 'http://unplaced.example.com',
+        styles: [:bold],
+      }
+      leftover = pdf.formatted_text_box(
+        text,
+        at: [0, 500],
+        width: 300,
+        height: 70,
+        size: 12,
+        exclusion_polygons: polygon,
+      )
+
+      unplaced_link = leftover.find { |fragment| fragment[:link] }
+      expect(unplaced_link[:styles]).to eq([:bold])
+      expect(unplaced_link[:link]).to eq('http://unplaced.example.com')
+    end
+
+    it 'keeps every drawn full fragment box outside the polygon' do
+      drawn = []
+      callback = Object.new
+      callback.define_singleton_method(:render_in_front) do |fragment|
+        drawn << fragment
+      end
+      mixed_text = formatted_text.dup
+      mixed_text[1] = {
+        text: 'BIG',
+        size: 24,
+        link: 'http://example.com',
+        styles: [:bold],
+      }
+      pdf.formatted_text_box(
+        mixed_text.map { |hash| hash.merge(callback: callback) },
+        at: [0, 500],
+        width: 300,
+        height: 120,
+        size: 12,
+        exclusion_polygons: polygon,
+      )
+
+      drawn.each do |fragment|
+        expect(intersects_polygon?(fragment, polygon)).to be(false),
+          "#{fragment.text.inspect} entered the polygon"
+      end
+    end
+  end
 end
