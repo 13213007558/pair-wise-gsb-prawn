@@ -6,6 +6,7 @@ require_relative 'document/bounding_box'
 require_relative 'document/column_box'
 require_relative 'document/internals'
 require_relative 'document/span'
+require_relative 'tagged_pdf'
 
 module Prawn
   # The `Prawn::Document` class is how you start creating a PDF document.
@@ -58,6 +59,7 @@ module Prawn
     include Prawn::Stamp
     include Prawn::SoftMask
     include Prawn::TransformationStack
+    include Prawn::Document::TaggedPdf
 
     alias inspect to_s
 
@@ -248,6 +250,8 @@ module Prawn
 
       @page_number = 0
 
+      initialize_tagged_pdf_renderer
+
       @text_formatter = options.delete(:text_formatter) ||
         Text::Formatted::Parser
 
@@ -297,6 +301,7 @@ module Prawn
     #   Page orientation.
     # @return [void]
     def start_new_page(options = {})
+      tag_manager.page_change_requested
       last_page = state.page
       if last_page
         last_page_size = last_page.size
@@ -322,6 +327,7 @@ module Prawn
       end
 
       state.page = PDF::Core::Page.new(self, page_options)
+      tag_manager.page_started(state.page)
 
       apply_margin_options(options)
       generate_margin_box
@@ -339,8 +345,10 @@ module Prawn
         @page_number += 1
 
         if @background
-          canvas do
-            image(@background, scale: @background_scale, at: bounds.top_left)
+          artifact(:layout) do
+            canvas do
+              image(@background, scale: @background_scale, at: bounds.top_left)
+            end
           end
         end
         @y = @bounding_box.absolute_top
@@ -393,6 +401,7 @@ module Prawn
     # @param page_number [Integer]
     # @return [void]
     def go_to_page(page_number)
+      tag_manager.page_change_requested
       @page_number = page_number
       state.page = state.pages[page_number - 1]
       generate_margin_box
@@ -458,6 +467,8 @@ module Prawn
         go_to_page(i)
         repeaters.each { |r| r.run(i) }
       end
+
+      tag_manager.finalize
 
       renderer.render(*arguments)
     end

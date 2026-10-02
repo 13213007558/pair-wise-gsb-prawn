@@ -34,7 +34,9 @@ module Prawn
     #   with this name.
     def stamp(name)
       dictionary_name, dictionary = stamp_dictionary(name)
-      renderer.add_content("/#{dictionary_name} Do")
+      tag_manager.stamp_invocation do
+        renderer.add_content("/#{dictionary_name} Do")
+      end
       update_annotation_references(dictionary.data[:Annots])
       state.page.xobjects.merge!(dictionary_name => dictionary)
     end
