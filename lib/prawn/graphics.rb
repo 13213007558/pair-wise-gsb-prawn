@@ -14,6 +14,7 @@ require_relative 'graphics/join_style'
 require_relative 'graphics/transparency'
 require_relative 'graphics/transformation'
 require_relative 'graphics/patterns'
+require_relative 'graphics/spot_color'
 
 module Prawn
   # Implements the drawing facilities for {Prawn::Document}.
@@ -27,6 +28,7 @@ module Prawn
     include Transparency
     include Transformation
     include Patterns
+    include SpotColor
 
     # @group Stable API
 

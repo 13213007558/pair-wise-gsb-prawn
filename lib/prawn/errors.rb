@@ -46,6 +46,13 @@ module Prawn
     # This error is raised when a name is not a valid format.
     InvalidName = Class.new(StandardError)
 
+    # This error is raised when a spot color (Separation or DeviceN color
+    # space) is registered with a name that is already in use but with
+    # a different definition. Spot colors sharing a name must share
+    # a definition; otherwise the printed result would silently depend on
+    # registration order.
+    IncompatibleSpotColor = Class.new(ArgumentError)
+
     # This error is raised when an object is attempted to be referenced by name,
     # but no such name is associated with an object.
     UndefinedObjectName = Class.new(StandardError)

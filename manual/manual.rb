@@ -41,6 +41,7 @@ Prawn::ManualBuilder::Manual.new(__dir__, page_size: 'A4') do
       chapter 'graphics/stroke_join'
       chapter 'graphics/stroke_dash'
       chapter 'graphics/color'
+      chapter 'graphics/spot_color'
       chapter 'graphics/gradients'
       chapter 'graphics/transparency'
       chapter 'graphics/soft_masks'

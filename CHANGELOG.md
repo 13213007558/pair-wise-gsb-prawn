@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added spot color support
+
+Spot colors can now be declared as Separation and DeviceN color spaces with
+an alternate color space and a tint transform, and used for filling and
+stroking without flattening them to RGB or CMYK.
+
 ## PrawnPDF 2.5.0
 
 ### Full font embedding

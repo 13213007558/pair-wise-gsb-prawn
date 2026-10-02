@@ -204,6 +204,8 @@ module Prawn
         if options[:pattern]
           set_color_space(type, :Pattern)
           renderer.add_content("/#{color} #{operator}")
+        elsif color.is_a?(SpotColor::SpotColorValue)
+          set_spot_color(type, color, operator)
         else
           set_color_space(type, color_space(color))
           color = color_to_s(color)
