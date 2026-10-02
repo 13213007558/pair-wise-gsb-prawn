@@ -72,6 +72,7 @@ module Prawn
       right_margin top_margin bottom_margin skip_page_creation
       compress background info
       text_formatter print_scaling
+      tagged
     ].freeze
 
     # Any module added to this array will be included into instances of
@@ -251,12 +252,15 @@ module Prawn
       @text_formatter = options.delete(:text_formatter) ||
         Text::Formatted::Parser
 
+      @tagging_enabled = options.delete(:tagged) == true
+
       options[:size] = options.delete(:page_size)
       options[:layout] = options.delete(:page_layout)
 
       initialize_first_page(options)
 
       @bounding_box = @margin_box
+      structure if @tagging_enabled
 
       if block
         block.arity < 1 ? instance_eval(&block) : block[self]
@@ -297,6 +301,7 @@ module Prawn
     #   Page orientation.
     # @return [void]
     def start_new_page(options = {})
+      @tagged_structure&.suspend_on_page_change
       last_page = state.page
       if last_page
         last_page_size = last_page.size
@@ -349,6 +354,8 @@ module Prawn
           state.on_page_create_action(self)
         end
       end
+    ensure
+      @tagged_structure&.resume_on_page_change
     end
 
     # Remove page of the document by index.
@@ -393,10 +400,13 @@ module Prawn
     # @param page_number [Integer]
     # @return [void]
     def go_to_page(page_number)
+      @tagged_structure&.suspend_on_page_change
       @page_number = page_number
       state.page = state.pages[page_number - 1]
       generate_margin_box
       @y = @bounding_box.absolute_top
+    ensure
+      @tagged_structure&.resume_on_page_change
     end
 
     # Set cursor absolute position.
