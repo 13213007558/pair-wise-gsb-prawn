@@ -2,6 +2,7 @@
 
 require 'zlib'
 
+require_relative 'text/bidi'
 require_relative 'text/formatted'
 require_relative 'text/box'
 
@@ -109,8 +110,10 @@ module Prawn
     # @option options :indent_paragraphs [Number]
     #   The amount to indent the first line of each paragraph. Omit this option
     #   if you do not want indenting.
-    # @option options :direction [:ltr, :rtl] (value of document.text_direction)
-    #   Direction of the text.
+    # @option options :direction [:ltr, :rtl, :auto] (value of document.text_direction)
+    #   Paragraph direction. `:auto` is used when `:bidi` is enabled.
+    # @option options :bidi [Boolean] (false)
+    #   Apply the Unicode bidirectional algorithm to each wrapped line.
     # @option options :fallback_fonts [Array<String>]
     #   An array of font names. Each name must be the name of an AFM font or the
     #   name that was used to register a family of TTF fonts (see
@@ -221,8 +224,10 @@ module Prawn
     # @option options :indent_paragraphs [Number]
     #   The amount to indent the first line of each paragraph. Omit this option
     #   if you do not want indenting.
-    # @option options :direction [:ltr, :rtl] (value of document.text_direction)
-    #   Direction of the text.
+    # @option options :direction [:ltr, :rtl, :auto] (value of document.text_direction)
+    #   Paragraph direction. `:auto` is used when `:bidi` is enabled.
+    # @option options :bidi [Boolean] (false)
+    #   Apply the Unicode bidirectional algorithm to each wrapped line.
     # @option options :fallback_fonts [Array<String>]
     #   An array of font names. Each name must be the name of an AFM font or the
     #   name that was used to register a family of TTF fonts (see
@@ -436,8 +441,10 @@ module Prawn
     # @option options :style [Symbol] (current style)
     #   The style to use. The requested style must be part of the current font
     #   family.
-    # @option options :direction [:ltr, :rtl] (value of document.text_direction)
-    #   Direction of the text.
+    # @option options :direction [:ltr, :rtl, :auto] (value of document.text_direction)
+    #   Paragraph direction. `:auto` is used when `:bidi` is enabled.
+    # @option options :bidi [Boolean] (false)
+    #   Apply the Unicode bidirectional algorithm to each wrapped line.
     # @option options :fallback_fonts [Array<String>]
     #   An array of font names. Each name must be the name of an AFM font or the
     #   name that was used to register a family of TTF fonts (see
@@ -531,8 +538,10 @@ module Prawn
     # @option options :style [Symbol] (current style)
     #   The style to use. The requested style must be part of the current font
     #   family.
-    # @option options :direction [:ltr, :rtl] (value of document.text_direction)
-    #   Direction of the text.
+    # @option options :direction [:ltr, :rtl, :auto] (value of document.text_direction)
+    #   Paragraph direction. `:auto` is used when `:bidi` is enabled.
+    # @option options :bidi [Boolean] (false)
+    #   Apply the Unicode bidirectional algorithm to each wrapped line.
     # @option options :fallback_fonts [Array<String>]
     #   An array of font names. Each name must be the name of an AFM font or the
     #   name that was used to register a family of TTF fonts (see

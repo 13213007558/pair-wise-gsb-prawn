@@ -47,6 +47,7 @@ module Prawn
           @fragments = []
           @unconsumed = []
           @kerning = options[:kerning]
+          @bidi = options[:bidi]
         end
 
         # Number of spaces in the text.
@@ -111,6 +112,7 @@ module Prawn
               text,
               format_state,
               @document,
+              bidi: @bidi,
             )
             @fragments << fragment
             self.fragment_measurements = fragment
@@ -234,6 +236,12 @@ module Prawn
             else
               apply_font_size(size, styles, &block)
             end
+          end
+        end
+
+        def character_width(character, fragment)
+          apply_font_settings(fragment) do
+            @document.width_of(character, kerning: false)
           end
         end
 
@@ -366,8 +374,13 @@ module Prawn
 
         def fragment_measurements=(fragment)
           apply_font_settings(fragment) do
+            if @bidi
+              measured_text =
+                Prawn::Text::Bidi.logical_text_without_controls(fragment.text)
+            end
+            measured_text ||= fragment.text
             fragment.width = @document.width_of(
-              fragment.text,
+              measured_text,
               kerning: @kerning,
             )
             fragment.line_height = @document.font.height

@@ -138,9 +138,11 @@ module Prawn
         #   The width of the box.
         # @option options :height [Number] (default_height())
         #   The height of the box.
-        # @option options :direction [:ltr, :rtl]
+        # @option options :direction [:ltr, :rtl, :auto]
         #   (value of document.text_direction)
-        #   Direction of the text (left-to-right or right-to-left).
+        #   Paragraph direction. `:auto` is used when `:bidi` is enabled.
+        # @option options :bidi [Boolean] (false)
+        #   Apply the Unicode bidirectional algorithm to each wrapped line.
         # @option options :fallback_fonts [Array<String>]
         #   An array of font names. Each name must be the name of an AFM font or
         #   the name that was used to register a family of external fonts (see
@@ -185,6 +187,15 @@ module Prawn
 
           @document = options[:document]
           @direction = options[:direction] || @document.text_direction
+          @bidi = options[:bidi]
+          if @bidi && @direction == :auto
+            @paragraph_direction = :auto
+            @direction = :ltr
+          elsif @direction == :auto
+            @direction = @document.text_direction
+          elsif @bidi
+            @paragraph_direction = @direction
+          end
           @fallback_fonts = options[:fallback_fonts] ||
             @document.fallback_fonts
           @at = (
@@ -193,8 +204,9 @@ module Prawn
           @width = options[:width] ||
             (@document.bounds.right - @at[0])
           @height = options[:height] || default_height
-          @align = options[:align] ||
-            (@direction == :rtl ? :right : :left)
+          @align = options[:align]
+          @align ||= :right if @direction == :rtl
+          @align ||= :left
           @vertical_align = options[:valign] || :top
           @leading = options[:leading] || @document.default_leading
           @character_spacing = options[:character_spacing] ||
@@ -355,6 +367,35 @@ module Prawn
           end
         end
 
+        # @private
+        def draw_bidi_fragment(fragment, accumulated_width, line_width, logical_text)
+          x =
+            case @align
+            when :left then @at[0]
+            when :center then @at[0] + (@width * 0.5) - (line_width * 0.5)
+            when :right then @at[0] + @width - line_width
+            when :justify then
+              if @direction == :ltr
+                @at[0]
+              else
+                @at[0] + @width - line_width
+              end
+            end
+          x += accumulated_width
+          y = @at[1] + @baseline_y + fragment.y_offset
+
+          fragment.left = x
+          fragment.baseline = y
+
+          return unless @inked
+
+          draw_fragment_underlays(fragment)
+          begin_bidi_logical_text(logical_text) if @bidi_line_started.nil?
+          @bidi_line_started = true
+          draw_bidi_text(fragment, x, y)
+          draw_fragment_overlays(fragment)
+        end
+
         # @group Extension API
 
         # Text box extensions.
@@ -411,12 +452,58 @@ module Prawn
             mode single_line
             document
             direction
+            bidi
             fallback_fonts
             draw_text_callback
           ]
         end
 
         private
+
+        def begin_bidi_logical_text(text)
+          logical_text = Prawn::Text::Bidi.logical_text_without_controls(text)
+          encoded = PDF::Core::ByteString.new(PDF::Core.utf8_to_utf16(logical_text))
+          @document.renderer.add_content(
+            "/Span << /ActualText #{PDF::Core.pdf_object(encoded, true)} >> BDC",
+          )
+        end
+
+        def end_bidi_logical_text
+          @document.renderer.add_content('EMC')
+        end
+
+        def draw_bidi_text(fragment, x, y)
+          if fragment.rtl?
+            cursor = x + fragment.width
+            fragment.logical_positions.each do |position|
+              char =
+                if position.mirror
+                  Prawn::Text::Bidi::MIRRORED[position.char]
+                else
+                  position.char
+                end
+              advance = position.base_width + fragment.character_spacing
+              advance += fragment.word_spacing if position.char == ' '
+              advance -= fragment.character_spacing if position.trailing
+              cursor -= advance
+              @document.word_spacing(0) do
+                if @draw_text_callback
+                  @draw_text_callback.call(char, at: [cursor, y], kerning: false)
+                else
+                  @document.draw_text!(char, at: [cursor, y], kerning: false)
+                end
+              end
+            end
+            else
+            @document.word_spacing(0) do
+              if @draw_text_callback
+                @draw_text_callback.call(fragment.text, at: [x, y], kerning: @kerning)
+              else
+                @document.draw_text!(fragment.text, at: [x, y], kerning: @kerning)
+              end
+            end
+          end
+        end
 
         def normalized_text(flags)
           text = normalize_encoding

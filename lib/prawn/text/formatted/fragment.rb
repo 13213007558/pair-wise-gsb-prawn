@@ -10,6 +10,7 @@ module Prawn
       class Fragment
         attr_reader :format_state
         attr_reader :text
+        attr_reader :original_text
         attr_writer :width
         attr_accessor :line_height
         attr_accessor :descender
@@ -21,10 +22,11 @@ module Prawn
         # @param text [String]
         # @param format_state [Hash{Symbol => any}]
         # @param document [Prawn::Documnt]
-        def initialize(text, format_state, document)
+        def initialize(text, format_state, document, bidi: false)
           @format_state = format_state
           @document = document
           @word_spacing = 0
+          @bidi = bidi
 
           # keep the original value of "text", so we can reinitialize @text if
           # formatting parameters like text direction are changed
@@ -333,7 +335,7 @@ module Prawn
             string = process_soft_hyphens(string)
           end
 
-          if direction == :rtl
+          if direction == :rtl && !@bidi
             string.reverse
           else
             string
