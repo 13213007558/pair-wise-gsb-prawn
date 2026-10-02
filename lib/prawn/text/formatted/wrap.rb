@@ -2,6 +2,7 @@
 
 require_relative 'line_wrap'
 require_relative 'arranger'
+require_relative 'optimal_line_wrap'
 
 module Prawn
   module Text
@@ -17,6 +18,49 @@ module Prawn
             kerning: options[:kerning],
           )
           @disable_wrap_by_char = options[:disable_wrap_by_char]
+          @line_breaks = options[:line_breaks] || :greedy
+          @word_spacing_options = options[:word_spacing]
+        end
+
+        def preplan_optimal_line_breaks(array)
+          planned = []
+          paragraphs = split_paragraphs(array)
+          paragraphs.each_with_index do |entries, paragraph_index|
+            unless entries.empty?
+              lines = Prawn::Text::Formatted::OptimalLineWrap.new(
+                entries,
+                document: @document,
+                kerning: @kerning,
+                width: available_width,
+                justify: @align == :justify,
+                disable_wrap_by_char: @disable_wrap_by_char,
+                character_spacing: @character_spacing,
+                word_spacing: @word_spacing_options,
+              ).wrap
+              planned.concat(lines.flatten)
+            end
+            if paragraph_index < paragraphs.length - 1
+              planned << { text: "\n" }
+            end
+          end
+          planned
+        end
+
+        def split_paragraphs(array)
+          paragraphs = []
+          current = []
+          array.each do |hash|
+            hash[:text].to_s.scan(/[^\n]+|\n/) do |part|
+              if part == "\n"
+                paragraphs << current
+                current = []
+              else
+                current << hash.merge(text: part)
+              end
+            end
+          end
+          paragraphs << current
+          paragraphs
         end
 
         # See the developer documentation for PDF::Core::Text#wrap
@@ -40,6 +84,10 @@ module Prawn
         # Returns any formatted text that was not printed
         #
         def wrap(array)
+          if @line_breaks == :optimal &&
+              !array.any? { |hash| hash[:optimal_line_break] }
+            array = preplan_optimal_line_breaks(array)
+          end
           initialize_wrap(array)
 
           stop = false
@@ -84,7 +132,12 @@ module Prawn
               break
             end
             printed_fragments << fragment.text
-            fragments_this_line << fragment
+            if merge_display_soft_hyphen?(fragments_this_line.last, fragment)
+              printed_fragments.last << fragment.text
+              fragments_this_line.last.merge_text(fragment)
+            else
+              fragments_this_line << fragment
+            end
           end
           @arranger.fragments.replace([])
 
@@ -106,13 +159,29 @@ module Prawn
           }.join
         end
 
+        def merge_display_soft_hyphen?(previous, fragment)
+          previous &&
+            previous.format_state[:display_soft_hyphen] &&
+            fragment.text == Prawn::Text::SHY
+        end
+
         def word_spacing_for_this_line
           if @align == :justify && @line_wrap.space_count.positive? &&
               !@line_wrap.paragraph_finished?
-            (available_width - @line_wrap.width) / @line_wrap.space_count
+            planned_word_spacing ||
+              (available_width - @line_wrap.width) / @line_wrap.space_count
           else
             0
           end
+        end
+
+        def planned_word_spacing
+          @arranger.consumed.each do |fragment|
+            if fragment[:optimal_line_break]
+              return fragment[:optimal_word_spacing] || 0
+            end
+          end
+          nil
         end
 
         def enough_height_for_this_line?

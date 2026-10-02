@@ -99,7 +99,11 @@ module Prawn
           when ''
             true
           when "\n"
-            @newline_encountered = true
+            if @arranger.current_format_state[:optimal_line_break]
+              @line_full = true
+            else
+              @newline_encountered = true
+            end
             false
           else
             tokenize(fragment).each do |segment|
@@ -114,6 +118,7 @@ module Prawn
                 @accumulated_width += segment_width
                 shy = soft_hyphen(segment.encoding)
                 if segment[-1] == shy
+                  @soft_hyphen_positions << @arranger.consumed.length - 1
                   sh_width = @document.width_of(shy, kerning: @kerning)
                   @accumulated_width -= sh_width
                 end
@@ -230,6 +235,7 @@ module Prawn
 
           @newline_encountered = false
           @line_full = false
+          @soft_hyphen_positions = []
         end
 
         def fragment_finished(fragment)
@@ -245,6 +251,7 @@ module Prawn
             pull_preceding_fragment_to_join_this_one?(fragment)
           end
           remember_this_fragment_for_backward_looking_ops
+          mark_selected_soft_hyphens
         end
 
         def update_output_based_on_last_fragment(
@@ -309,6 +316,18 @@ module Prawn
             wrap_by_char(segment)
           end
           @line_full = true
+        end
+
+        def mark_selected_soft_hyphens
+          return unless @line_full
+
+          @soft_hyphen_positions.uniq.each do |index|
+            fragment = @arranger.consumed[index]
+            text = fragment[:text]
+            if text.end_with?(soft_hyphen(text.encoding))
+              fragment[:display_soft_hyphen] = true
+            end
+          end
         end
 
         def wrap_by_char(segment)

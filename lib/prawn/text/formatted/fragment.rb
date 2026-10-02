@@ -192,6 +192,12 @@ module Prawn
           @text = process_text(@original_text)
         end
 
+        def merge_text(fragment)
+          @original_text += fragment.instance_variable_get(:@original_text)
+          @text += fragment.text
+          @width += fragment.width
+        end
+
         # Number of spaces in the text.
         #
         # @return [Integer]
@@ -323,21 +329,17 @@ module Prawn
         def process_text(text)
           string = strip_zero_width_spaces(text)
 
-          if exclude_trailing_white_space?
+          if preserve_soft_hyphen?
             string = string.rstrip
-
-            if soft_hyphens_need_processing?(string)
-              string = process_soft_hyphens(string[0..-2]) + string[-1..]
-            end
+            string = preserve_final_soft_hyphen(string)
           elsif soft_hyphens_need_processing?(string)
             string = process_soft_hyphens(string)
+            string = string.rstrip if exclude_trailing_white_space?
+          elsif exclude_trailing_white_space?
+            string = string.rstrip
           end
 
-          if direction == :rtl
-            string.reverse
-          else
-            string
-          end
+          direction == :rtl ? string.reverse : string
         end
 
         def exclude_trailing_white_space?
@@ -351,13 +353,26 @@ module Prawn
         def normalized_soft_hyphen
           @format_state[:normalized_soft_hyphen]
         end
+        def preserve_soft_hyphen?
+          @format_state[:display_soft_hyphen]
+        end
 
-        def process_soft_hyphens(string)
-          if string.encoding != normalized_soft_hyphen.encoding
-            string.force_encoding(normalized_soft_hyphen.encoding)
+        def preserve_final_soft_hyphen(string)
+          return process_soft_hyphens(string) unless
+            string.end_with?(normalized_soft_hyphen)
+
+          ending_length = 1
+          while ending_length < string.length &&
+              string[-ending_length - 1] == normalized_soft_hyphen
+            ending_length += 1
           end
 
-          string.gsub(normalized_soft_hyphen, '')
+          body = string[0...-ending_length]
+          process_soft_hyphens(body) + string[-ending_length..]
+        end
+
+        def process_soft_hyphens(string)
+          string.split(normalized_soft_hyphen).join
         end
 
         def strip_zero_width_spaces(string)

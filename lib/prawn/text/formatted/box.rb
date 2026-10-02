@@ -126,6 +126,10 @@ module Prawn
         # @option options :disable_wrap_by_char [Boolean] (false)
         #   Whether or not to prevent mid-word breaks when text does not fit in
         #   box.
+        # @option options :line_breaks [:greedy, :optimal] (:greedy)
+        #   Use paragraph-wide dynamic line breaking instead of greedy breaks.
+        # @option options :word_spacing [Hash, Range] (0..Infinity)
+        #   Minimum and maximum extra spacing allowed at justified word breaks.
         # @option options :mode [Symbol] (:fill)
         #   The text rendering mode. See documentation for
         #   {Prawn::Document#text_rendering_mode} for a list of valid options.
@@ -179,6 +183,17 @@ module Prawn
 
           @overflow = options[:overflow] || :truncate
           @disable_wrap_by_char = options[:disable_wrap_by_char]
+          @line_breaks = options[:line_breaks] || :greedy
+          unless %i[greedy optimal].include?(@line_breaks)
+            raise ArgumentError,
+              'line_breaks must be one of :greedy or :optimal symbols'
+          end
+          @word_spacing = options[:word_spacing]
+          if @word_spacing && !@word_spacing.is_a?(Hash) &&
+              !@word_spacing.is_a?(Range)
+            raise ArgumentError,
+              'word_spacing must be a Hash or Range'
+          end
 
           self.original_text = formatted_text
           @text = nil
@@ -407,6 +422,7 @@ module Prawn
             rotate rotate_around
             overflow min_font_size
             disable_wrap_by_char
+            line_breaks word_spacing
             leading character_spacing
             mode single_line
             document

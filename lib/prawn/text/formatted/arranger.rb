@@ -145,6 +145,10 @@ module Prawn
           @fragments = []
         end
 
+        def mark_soft_hyphen
+          @consumed.last[:display_soft_hyphen] = true unless @consumed.empty?
+        end
+
         # Were all fragments processed?
         #
         # @return [Boolean]

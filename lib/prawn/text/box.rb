@@ -35,6 +35,10 @@ module Prawn
     #   spacing.
     # @option options :disable_wrap_by_char [Boolean] (false)
     #   Whether or not to prevent mid-word breaks when text does not fit in box.
+    # @option options :line_breaks [:greedy, :optimal] (:greedy)
+    #   Use paragraph-wide dynamic line breaking instead of greedy breaks.
+    # @option options :word_spacing [Hash, Range] (0..Infinity)
+    #   Minimum and maximum extra spacing allowed at justified word breaks.
     # @option options :mode [Symbol] (:fill)
     #   The text rendering mode. See documentation for
     #   {Prawn::Document#text_rendering_mode} for a list of valid options.
