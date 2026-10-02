@@ -41,12 +41,33 @@ module Prawn
         attr_reader :unconsumed
         attr_reader :fragments
         attr_reader :current_format_state
+        attr_reader :prepared_line
+        attr_accessor :prepared_paragraph_finished
 
         def initialize(document, options = {})
           @document = document
           @fragments = []
           @unconsumed = []
           @kerning = options[:kerning]
+          @prepared_line = nil
+          @prepared_paragraph_finished = false
+        end
+
+        # Apply the font settings from a formatted-text hash while measuring.
+        #
+        # @param format_state [Hash]
+        # @yield
+        # @return [Number]
+        def measurement_font_settings(format_state, &block)
+          previous_format_state = @current_format_state
+          @current_format_state = format_state
+          measured_width = nil
+          apply_font_settings do
+            measured_width = block.call
+          end
+          measured_width
+        ensure
+          @current_format_state = previous_format_state
         end
 
         # Number of spaces in the text.
@@ -143,6 +164,20 @@ module Prawn
 
           @consumed = []
           @fragments = []
+          @prepared_line = nil
+          @prepared_paragraph_finished = false
+        end
+
+        # Use an already planned line.
+        #
+        # @param fragments [Array<Hash>]
+        # @param paragraph_finished [Boolean]
+        # @return [void]
+        def prepare_line(fragments, paragraph_finished: false)
+          initialize_line
+          @prepared_line = fragments
+          @prepared_paragraph_finished = paragraph_finished
+          @unconsumed = fragments.map(&:dup)
         end
 
         # Were all fragments processed?
@@ -150,6 +185,14 @@ module Prawn
         # @return [Boolean]
         def finished?
           @unconsumed.empty?
+        end
+
+        # Add planned fragments back to the queue without rendering them.
+        #
+        # @param fragments [Array<Hash>]
+        # @return [void]
+        def append_unconsumed(fragments)
+          @unconsumed.concat(fragments)
         end
 
         # Get the next unprocessed string.

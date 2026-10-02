@@ -120,6 +120,12 @@ module Prawn
     # @option option :align [:left, :center, :right, :justify]
     #   (:left if direction is :ltr, :right if direction is :rtl)
     #   Alignment within the bounding box.
+    # @option options :line_break [:greedy, :optimal] (:greedy)
+    #   Optimize all line breaks in each paragraph together.
+    # @option options :hyphen_penalty [Number] (10)
+    #   Penalty for ending a line at a soft or hard hyphen.
+    # @option options :consecutive_hyphen_penalty [Number] (100)
+    #   Extra penalty for two consecutive hyphenated lines.
     # @option options :valign [:top, :center, :bottom] (:top)
     #   Vertical alignment within the bounding box.
     # @option options :leading (Number) (value of document.default_leading)
@@ -232,6 +238,12 @@ module Prawn
     # @option option :align [:left, :center, :right, :justify]
     #   (:left if direction is :ltr, :right if direction is :rtl)
     #   Alignment within the bounding box.
+    # @option options :line_break [:greedy, :optimal] (:greedy)
+    #   Optimize all line breaks in each paragraph together.
+    # @option options :hyphen_penalty [Number] (10)
+    #   Penalty for ending a line at a soft or hard hyphen.
+    # @option options :consecutive_hyphen_penalty [Number] (100)
+    #   Extra penalty for two consecutive hyphenated lines.
     # @option options :valign [:top, :center, :bottom] (:top)
     #   Vertical alignment within the bounding box.
     # @option options :leading (Number) (value of document.default_leading)
@@ -447,6 +459,12 @@ module Prawn
     # @option option :align [:left, :center, :right, :justify]
     #   (:left if direction is :ltr, :right if direction is :rtl)
     #   Alignment within the bounding box.
+    # @option options :line_break [:greedy, :optimal] (:greedy)
+    #   Optimize all line breaks in each paragraph together.
+    # @option options :hyphen_penalty [Number] (10)
+    #   Penalty for ending a line at a soft or hard hyphen.
+    # @option options :consecutive_hyphen_penalty [Number] (100)
+    #   Extra penalty for two consecutive hyphenated lines.
     # @option options :valign [:top, :center, :bottom] (:top)
     #   Vertical alignment within the bounding box.
     # @option options :leading (Number) (value of document.default_leading)
@@ -542,6 +560,12 @@ module Prawn
     # @option option :align [:left, :center, :right, :justify]
     #   (:left if direction is :ltr, :right if direction is :rtl)
     #   Alignment within the bounding box.
+    # @option options :line_break [:greedy, :optimal] (:greedy)
+    #   Optimize all line breaks in each paragraph together.
+    # @option options :hyphen_penalty [Number] (10)
+    #   Penalty for ending a line at a soft or hard hyphen.
+    # @option options :consecutive_hyphen_penalty [Number] (100)
+    #   Extra penalty for two consecutive hyphenated lines.
     # @option options :valign [:top, :center, :bottom] (:top)
     #   Vertical alignment within the bounding box.
     # @option options :leading (Number) (value of document.default_leading)

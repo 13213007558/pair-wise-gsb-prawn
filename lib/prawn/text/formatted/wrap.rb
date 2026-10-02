@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'line_wrap'
+require_relative 'optimal_line_break'
 require_relative 'arranger'
 
 module Prawn
@@ -17,6 +18,11 @@ module Prawn
             kerning: options[:kerning],
           )
           @disable_wrap_by_char = options[:disable_wrap_by_char]
+          @line_break = options[:line_break] || :greedy
+          @hyphen_penalty = options[:hyphen_penalty]
+          @consecutive_hyphen_penalty =
+            options[:consecutive_hyphen_penalty]
+          @planned_lines = []
         end
 
         # See the developer documentation for PDF::Core::Text#wrap
@@ -41,19 +47,24 @@ module Prawn
         #
         def wrap(array)
           initialize_wrap(array)
+          plan_paragraph if optimal_line_breaking?
 
           stop = false
           until stop
             # wrap before testing if enough height for this line because the
             # height of the highest fragment on this line will be used to
             # determine the line height
-            @line_wrap.wrap_line(
-              document: @document,
-              kerning: @kerning,
-              width: available_width,
-              arranger: @arranger,
-              disable_wrap_by_char: @disable_wrap_by_char,
-            )
+            if optimal_line_breaking?
+              wrap_prepared_line
+            else
+              @line_wrap.wrap_line(
+                document: @document,
+                kerning: @kerning,
+                width: available_width,
+                arranger: @arranger,
+                disable_wrap_by_char: @disable_wrap_by_char,
+              )
+            end
 
             if enough_height_for_this_line?
               move_baseline_down
@@ -62,7 +73,22 @@ module Prawn
               stop = true
             end
 
-            stop ||= @single_line || @arranger.finished?
+            stop ||= @single_line ||
+              (@planned_lines.empty? && @arranger.finished?)
+          end
+
+          if optimal_line_breaking?
+            @planned_lines.each_with_index do |line, index|
+              fragments = line.fragments.map(&:dup)
+              if index.zero? && @arranger.consumed.any?
+                first_fragment = fragments.first
+                if first_fragment && first_fragment[:text] != "\n" &&
+                    !first_fragment[:text].start_with?(/\s/)
+                  first_fragment[:text] = " #{first_fragment[:text]}"
+                end
+              end
+              @arranger.append_unconsumed(fragments)
+            end
           end
           @text = @printed_lines.join("\n")
           @everything_printed = @arranger.finished?
@@ -70,6 +96,51 @@ module Prawn
         end
 
         private
+
+        def optimal_line_breaking?
+          @line_break == :optimal
+        end
+
+        def plan_paragraph
+          @planned_lines = []
+
+          until @arranger.finished?
+            planner = Prawn::Text::Formatted::OptimalLineBreak.new(
+              @document,
+              @arranger,
+              kerning: @kerning,
+              width: available_width,
+              justify: @align == :justify,
+              disable_wrap_by_char: @disable_wrap_by_char,
+              hyphen_penalty: @hyphen_penalty,
+              consecutive_hyphen_penalty:
+                @consecutive_hyphen_penalty,
+            )
+            paragraph = planner.paragraph
+            @planned_lines.concat(paragraph.lines)
+          end
+        end
+
+        def wrap_prepared_line
+          line = @planned_lines.shift
+          if line.nil?
+            @arranger.initialize_line
+            @arranger.finalize_line
+            @accumulated_width = 0
+            @space_count = 0
+            return ''
+          end
+
+          @arranger.prepare_line(
+            line.fragments,
+            paragraph_finished: line.paragraph_finished,
+          )
+          @line_wrap.wrap_prepared_line(
+            document: @document,
+            kerning: @kerning,
+            arranger: @arranger,
+          )
+        end
 
         def print_line
           @nothing_printed = false

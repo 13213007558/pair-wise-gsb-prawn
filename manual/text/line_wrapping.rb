@@ -14,6 +14,11 @@ Prawn::ManualBuilder::Chapter.new do
       For writing styles that do not make use of spaces, the zero width space
       serves to mark word boundaries. Zero width spaces are available only with
       external fonts.
+
+      Pass <code>line_break: :optimal</code> to choose all breaks in a paragraph
+      together instead of filling each line greedily. The optimizer stretches
+      word spacing for justified lines, shows a soft hyphen only when its break
+      is selected, and penalizes consecutive hyphenated lines.
     TEXT
   end
 
@@ -27,6 +32,14 @@ Prawn::ManualBuilder::Chapter.new do
     text "Soft hyphens:\n" \
       "Slip slid#{shy}ing away, slip slid#{shy}ing away. You know the " \
       "nearer your destinat#{shy}ion the more you're slip slid#{shy}ing away."
+    move_down 20
+
+    text(
+      'Optimized line breaks can avoid awkward local choices in justified ' \
+        'paragraphs.',
+      line_break: :optimal,
+      align: :justify,
+    )
     move_down 20
 
     nbsp = Prawn::Text::NBSP

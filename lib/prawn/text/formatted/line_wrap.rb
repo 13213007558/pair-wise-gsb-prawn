@@ -22,7 +22,36 @@ module Prawn
         #
         # @return [Boolean]
         def paragraph_finished?
-          @newline_encountered || next_string_newline? || @arranger.finished?
+          @newline_encountered || next_string_newline? ||
+            (@arranger.prepared_line &&
+              @arranger.prepared_paragraph_finished) ||
+            (!@arranger.prepared_line && @arranger.finished?)
+        end
+
+        # Finalize a line that was selected by a whole-paragraph planner.
+        #
+        # @param options [Hash{Symbol => any}]
+        # @option options :document [Prawn::Document]
+        # @option options :kerning [Boolean]
+        # @option options :arranger [Prawn::Text::Formatted::Arranger]
+        # @return [String]
+        def wrap_prepared_line(options)
+          @document = options[:document]
+          @kerning = options[:kerning]
+          @arranger = options[:arranger]
+          @newline_encountered = false
+
+          while @arranger.next_string
+          end
+          first_fragment = @arranger.consumed.first
+          if first_fragment && first_fragment[:text] != "\n"
+            first_fragment[:text] = first_fragment[:text].lstrip
+          end
+          @arranger.finalize_line
+          @newline_encountered = @arranger.line == "\n"
+          @accumulated_width = @arranger.line_width
+          @space_count = @arranger.space_count
+          @arranger.line
         end
 
         # Break the fragment into tokens.

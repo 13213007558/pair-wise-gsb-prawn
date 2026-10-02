@@ -35,6 +35,12 @@ module Prawn
     #   spacing.
     # @option options :disable_wrap_by_char [Boolean] (false)
     #   Whether or not to prevent mid-word breaks when text does not fit in box.
+    # @option options :line_break [:greedy, :optimal] (:greedy)
+    #   Whether to fill lines greedily or optimize all breaks in a paragraph.
+    # @option options :hyphen_penalty [Number] (10)
+    #   Cost added when a line ends at a soft or hard hyphen.
+    # @option options :consecutive_hyphen_penalty [Number] (100)
+    #   Additional cost added when two consecutive lines are hyphenated.
     # @option options :mode [Symbol] (:fill)
     #   The text rendering mode. See documentation for
     #   {Prawn::Document#text_rendering_mode} for a list of valid options.
@@ -120,6 +126,12 @@ module Prawn
       #   spacing.
       # @option options :disable_wrap_by_char [Boolean] (false)
       #   Whether or not to prevent mid-word breaks when text does not fit in box.
+      # @option options :line_break [:greedy, :optimal] (:greedy)
+      #   Whether to fill lines greedily or optimize all breaks in a paragraph.
+      # @option options :hyphen_penalty [Number] (10)
+      #   Cost added when a line ends at a soft or hard hyphen.
+      # @option options :consecutive_hyphen_penalty [Number] (100)
+      #   Additional cost added when two consecutive lines are hyphenated.
       # @option options :mode [Symbol] (:fill)
       #   The text rendering mode. See documentation for
       #   {Prawn::Document#text_rendering_mode} for a list of valid options.
