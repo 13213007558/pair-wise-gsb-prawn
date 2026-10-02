@@ -2,6 +2,7 @@
 
 require_relative 'line_wrap'
 require_relative 'arranger'
+require_relative 'exclusion_polygon'
 
 module Prawn
   module Text
@@ -10,6 +11,11 @@ module Prawn
       #
       # @private
       module Wrap
+        LineSegment = Struct.new(
+          :left, :available_width, :width, :space_count,
+          :paragraph_finished, :fragments,
+        )
+
         def initialize(_array, options)
           @line_wrap = Prawn::Text::Formatted::LineWrap.new
           @arranger = Prawn::Text::Formatted::Arranger.new(
@@ -17,6 +23,7 @@ module Prawn
             kerning: options[:kerning],
           )
           @disable_wrap_by_char = options[:disable_wrap_by_char]
+          @exclusion_polygons = normalize_exclusion_polygons(options)
         end
 
         # See the developer documentation for PDF::Core::Text#wrap
@@ -44,25 +51,17 @@ module Prawn
 
           stop = false
           until stop
-            # wrap before testing if enough height for this line because the
-            # height of the highest fragment on this line will be used to
-            # determine the line height
-            @line_wrap.wrap_line(
-              document: @document,
-              kerning: @kerning,
-              width: available_width,
-              arranger: @arranger,
-              disable_wrap_by_char: @disable_wrap_by_char,
-            )
+            segments, metrics = lay_out_baseline
 
-            if enough_height_for_this_line?
-              move_baseline_down
-              print_line
-            else
+            if segments.nil?
               stop = true
             end
 
-            stop ||= @single_line || @arranger.finished?
+            next if stop
+            next if segments.empty? && !@arranger.finished?
+
+            print_segments(segments)
+            stop = @single_line || @arranger.finished?
           end
           @text = @printed_lines.join("\n")
           @everything_printed = @arranger.finished?
@@ -71,34 +70,204 @@ module Prawn
 
         private
 
-        def print_line
+        def normalize_exclusion_polygons(options)
+          polygon_option = options[:exclusion_polygons] || options[:exclude_polygons]
+          return [] if polygon_option.nil?
+
+          if polygon_option.is_a?(Array) && polygon_option.first.is_a?(Array) &&
+              polygon_option.first.first.is_a?(Array)
+            polygons = polygon_option
+          else
+            polygons = [polygon_option]
+          end
+
+          polygons.map do |polygon|
+            next polygon if polygon.is_a?(ExclusionPolygon)
+
+            ExclusionPolygon.new(polygon)
+          end
+        end
+
+        def lay_out_baseline
+          metrics = next_line_metrics
+          3.times do
+            baseline = candidate_baseline(metrics)
+            segments, actual_metrics = wrap_segments(baseline, metrics)
+
+            unless fits_height?(baseline, actual_metrics)
+              reconsume_segments(segments)
+              if metrics_differ?(actual_metrics, metrics)
+                metrics = actual_metrics
+                next
+              end
+              return [nil, actual_metrics]
+            end
+
+            if metrics_differ?(actual_metrics, metrics)
+              reconsume_segments(segments)
+              metrics = actual_metrics
+              next
+            end
+
+            @baseline_y = baseline
+            @line_height = actual_metrics[:line_height]
+            @ascender = actual_metrics[:ascender]
+            @descender = actual_metrics[:descender]
+            return [segments, actual_metrics]
+          end
+
+          [nil, metrics]
+        end
+
+        def wrap_segments(baseline, metrics)
+          segments = []
+          maximum_metrics = empty_metrics
+          intervals = available_intervals(baseline, metrics)
+
+          intervals.each do |left, right|
+            break unless segments.empty? || !segments.last.paragraph_finished
+
+            begin
+              @line_wrap.wrap_line(
+                document: @document,
+                kerning: @kerning,
+              width: right - left,
+              arranger: @arranger,
+              disable_wrap_by_char: @disable_wrap_by_char,
+              strip_leading_whitespace: segments.empty?,
+            )
+            rescue Prawn::Errors::CannotFit
+              reconsume_segments(segments)
+              raise
+            end
+
+            fragments = retrieve_fragments
+            segment = LineSegment.new(
+              left,
+              right - left,
+              fragments.sum(&:width),
+              fragments.sum(&:space_count),
+              @line_wrap.paragraph_finished?,
+              fragments,
+            )
+            segments << segment
+            maximum_metrics = maximum_metrics(maximum_metrics, fragment_metrics(fragments))
+          end
+
+          maximum_metrics = metrics if segments.empty?
+          [segments, maximum_metrics]
+        end
+
+        def retrieve_fragments
+          fragments = []
+          while fragment = @arranger.retrieve_fragment
+            fragments << fragment
+          end
+          fragments
+        end
+
+        def reconsume_segments(segments)
+          hashes = segments.flat_map do |segment|
+            segment.fragments.map do |fragment|
+              fragment.include_trailing_white_space!
+              fragment.format_state.merge(text: fragment.text)
+            end
+          end
+          @arranger.reconsume(hashes)
+        end
+
+        def available_intervals(baseline, metrics)
+          intervals = [[@at[0], @at[0] + @width]]
+          top = @at[1] + baseline + metrics[:ascender]
+          bottom = @at[1] + baseline - metrics[:descender]
+
+          @exclusion_polygons.each do |polygon|
+            intervals = intervals.flat_map do |left, right|
+              polygon.available_intervals(left, right, top, bottom)
+            end
+          end
+
+          sort_intervals(intervals)
+        end
+
+        def sort_intervals(intervals)
+          if @direction == :rtl
+            intervals.sort_by { |left, _right| -left }
+          else
+            intervals.sort_by(&:first)
+          end
+        end
+
+        def current_line_metrics
+          {
+            line_height: @document.font.height,
+            ascender: @document.font.ascender,
+            descender: @document.font.descender,
+          }
+        end
+
+        def next_line_metrics
+          hash = @arranger.unconsumed.find { |fragment| fragment[:text] != "\n" }
+          return current_line_metrics if hash.nil?
+
+          fragment = Prawn::Text::Formatted::Fragment.new(
+            hash[:text], hash, @document
+          )
+          @document.save_font do
+            @arranger.apply_font_settings(fragment) do
+              return current_line_metrics
+            end
+          end
+        end
+
+        def empty_metrics
+          { line_height: 0, ascender: 0, descender: 0 }
+        end
+
+        def fragment_metrics(fragments)
+          {
+            line_height: fragments.map(&:line_height).max || 0,
+            ascender: fragments.map(&:ascender).max || 0,
+            descender: fragments.map(&:descender).max || 0,
+          }
+        end
+
+        def maximum_metrics(first, second)
+          first.merge(second) { |_key, first_value, second_value|
+            [first_value, second_value].max
+          }
+        end
+
+        def metrics_differ?(first, second)
+          first.any? { |key, value| (value - second[key]).abs > 1e-9 }
+        end
+
+        def candidate_baseline(metrics)
+          if @baseline_y.zero?
+            -metrics[:ascender]
+          else
+            @baseline_y - (@line_height + @leading)
+          end
+        end
+
+        def fits_height?(baseline, metrics)
+          (-baseline + metrics[:descender]) <= @height + 1e-4
+        end
+
+        def print_segments(segments)
           @nothing_printed = false
           printed_fragments = []
-          fragments_this_line = []
-
-          word_spacing = word_spacing_for_this_line
-          @arranger.fragments.each do |fragment|
-            fragment.word_spacing = word_spacing
-            if fragment.text == "\n"
-              printed_fragments << "\n" if @printed_lines.last == ''
-              break
+          segments.each do |segment|
+            word_spacing = word_spacing_for_segment(segment)
+            segment.fragments.each do |fragment|
+              fragment.word_spacing = word_spacing
+              if fragment.text == "\n"
+                printed_fragments << "\n" if @printed_lines.last == ''
+                next
+              end
+              printed_fragments << fragment.text
             end
-            printed_fragments << fragment.text
-            fragments_this_line << fragment
-          end
-          @arranger.fragments.replace([])
-
-          accumulated_width = 0
-          fragments_this_line.reverse! if @direction == :rtl
-          fragments_this_line.each do |fragment_this_line|
-            fragment_this_line.default_direction = @direction
-            format_and_draw_fragment(
-              fragment_this_line,
-              accumulated_width,
-              @line_wrap.width,
-              word_spacing,
-            )
-            accumulated_width += fragment_this_line.width
+            draw_segment(segment)
           end
 
           @printed_lines << printed_fragments.map { |s|
@@ -106,32 +275,31 @@ module Prawn
           }.join
         end
 
-        def word_spacing_for_this_line
-          if @align == :justify && @line_wrap.space_count.positive? &&
-              !@line_wrap.paragraph_finished?
-            (available_width - @line_wrap.width) / @line_wrap.space_count
-          else
-            0
+        def draw_segment(segment)
+          fragments = segment.fragments.reject { |fragment| fragment.text == "\n" }
+          fragments.reverse! if @direction == :rtl
+          accumulated_width = 0
+
+          fragments.each do |fragment|
+            fragment.default_direction = @direction
+            format_and_draw_fragment(
+              fragment,
+              accumulated_width,
+              segment.width,
+              fragment.word_spacing,
+              segment.left,
+              segment.available_width,
+            )
+            accumulated_width += fragment.width
           end
         end
 
-        def enough_height_for_this_line?
-          @line_height = @arranger.max_line_height
-          @descender = @arranger.max_descender
-          @ascender = @arranger.max_ascender
-          diff =
-            if @baseline_y.zero?
-              @ascender + @descender
-            else
-              @descender + @line_height + @leading
-            end
-          require_relatived_total_height = @baseline_y.abs + diff
-          if require_relatived_total_height > @height + 0.0001
-            # no room for the full height of this line
-            @arranger.repack_unretrieved
-            false
+        def word_spacing_for_segment(segment)
+          if @align == :justify && segment.space_count.positive? &&
+              !segment.paragraph_finished
+            (segment.available_width - segment.width) / segment.space_count
           else
-            true
+            0
           end
         end
 
@@ -150,13 +318,18 @@ module Prawn
           @everything_printed = false
         end
 
-        def format_and_draw_fragment(fragment, accumulated_width, line_width, word_spacing)
+        def format_and_draw_fragment(
+          fragment, accumulated_width, line_width, word_spacing,
+          line_left = @at[0], available_width = line_width
+        )
           @arranger.apply_color_and_font_settings(fragment) do
             draw_fragment(
               fragment,
               accumulated_width,
               line_width,
               word_spacing,
+              line_left,
+              available_width,
             )
           end
         end

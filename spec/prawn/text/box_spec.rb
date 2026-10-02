@@ -160,6 +160,23 @@ describe Prawn::Text::Box do
     end
   end
 
+  describe 'polygon exclusion regions' do
+    it 'returns the unplaced plain text after wrapping around the polygon' do
+      polygon = [
+        [0, 460], [500, 460], [500, 430], [300, 430],
+        [300, 300], [200, 300], [200, 430], [0, 430]
+      ]
+      leftover = pdf.text_box(
+        'bold-link-text-xxxxxxxxxxxxxxxxxxxx TAIL WORDS THAT WILL NOT FIT ' \
+          'AT ALL RIGHT NOW OVERFLOW',
+        at: [0, 460], width: 500, height: 55, size: 12,
+        exclusion_polygons: [polygon]
+      )
+
+      expect(leftover).to include('OVERFLOW')
+    end
+  end
+
   context 'with :draw_text_callback' do
     it 'hits the callback whenever text is drawn' do
       draw_block = instance_spy(Proc, 'Draw block')

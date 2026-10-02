@@ -5,6 +5,80 @@ require 'spec_helper'
 describe Prawn::Text::Formatted::Box do
   let(:pdf) { create_pdf }
 
+  class FragmentRecorder
+    attr_reader :fragments
+
+    def initialize
+      @fragments = []
+    end
+
+    def render_behind(_fragment); end
+
+    def render_in_front(fragment)
+      @fragments << fragment
+    end
+  end
+
+  def self.point_on_segment?(point, first, second)
+    x, y = point
+    x1, y1 = first
+    x2, y2 = second
+    cross = (y - y1) * (x2 - x1) - (x - x1) * (y2 - y1)
+    return false unless cross.abs < 1e-6
+
+    [x, x1, x2].sort[1] == x && [y, y1, y2].sort[1] == y
+  end
+
+  def self.point_in_polygon?(point, polygon)
+    x, y = point
+    edges = polygon.each_cons(2).to_a << [polygon.last, polygon.first]
+    return false if edges.any? { |first, second| point_on_segment?(point, first, second) }
+
+    edges.reduce(false) do |inside, ((x1, y1), (x2, y2))|
+      if (y1 - y).abs >= 1e-6 && (y2 - y).abs >= 1e-6 &&
+          (y1 > y) != (y2 > y) &&
+          x < ((x2 - x1) * (y - y1) / (y2 - y1)) + x1
+        !inside
+      else
+        inside
+      end
+    end
+  end
+
+  def self.rectangle_intersects_polygon?(box, polygon)
+    left, bottom, right, top = box.map.with_index do |coordinate, index|
+      coordinate + (index < 2 ? 1e-6 : -1e-6)
+    end
+    corners = [
+      [left, bottom], [right, bottom], [right, top], [left, top]
+    ]
+    return true if corners.any? { |point| point_in_polygon?(point, polygon) }
+    return true if polygon.any? { |point|
+      point[0] > left && point[0] < right &&
+        point[1] > bottom && point[1] < top
+    }
+
+    polygon_edges = polygon.each_cons(2).to_a << [polygon.last, polygon.first]
+    rectangle_edges = corners.each_cons(2).to_a << [corners.last, corners.first]
+    polygon_edges.any? { |first, second|
+      rectangle_edges.any? { |third, fourth|
+        proper_intersection?(first, second, third, fourth)
+      }
+    }
+  end
+
+  def self.proper_intersection?(first, second, third, fourth)
+    counterclockwise?(first, third, fourth) !=
+      counterclockwise?(second, third, fourth) &&
+      counterclockwise?(first, second, third) !=
+      counterclockwise?(first, second, fourth)
+  end
+
+  def self.counterclockwise?(first, second, third)
+    (third[1] - first[1]) * (second[0] - first[0]) >
+      (second[1] - first[1]) * (third[0] - first[0])
+  end
+
   describe 'wrapping' do
     it 'does not wrap between two fragments' do
       texts = [
@@ -871,6 +945,104 @@ describe Prawn::Text::Formatted::Box do
         ArgumentError,
         'valign must be one of :top, :bottom or :center symbols',
       )
+    end
+  end
+
+  describe 'polygon exclusion regions' do
+    let(:polygon) do
+      [
+        [0, 460], [500, 460], [500, 430], [300, 430],
+        [300, 300], [200, 300], [200, 430], [0, 430]
+      ]
+    end
+
+    it 'uses the full line height instead of only the baseline' do
+      baseline_obstacle = [
+        [0, 450], [500, 450], [500, 449.2], [0, 449.5]
+      ]
+      recorder = FragmentRecorder.new
+      described_class.new(
+        [{ text: 'X', callback: recorder }],
+        document: pdf,
+        at: [0, 460], width: 500, height: 460, size: 12,
+        exclusion_polygons: [baseline_obstacle]
+      ).render
+
+      expect(recorder.fragments.first.top).to be < 449.2
+    end
+
+    it 'accepts exclude_polygons as an option alias' do
+      recorder = FragmentRecorder.new
+      described_class.new(
+        [{ text: 'X' * 40, callback: recorder }],
+        document: pdf,
+        at: [0, 460], width: 500, height: 200, size: 12,
+        exclude_polygons: [polygon]
+      ).render
+
+      first_baseline = recorder.fragments.first.baseline
+      right_fragment = recorder.fragments.find do |fragment|
+        fragment.baseline == first_baseline && fragment.left >= 300
+      end
+      expect(right_fragment).to have_attributes(left: be >= 300)
+    end
+
+    it 'continues formatted text through disconnected intervals and preserves metadata' do
+      recorder = FragmentRecorder.new
+      text = [
+        {
+          text: 'bold-link-text-xxxxxxxxxxxxxxxxxxxx ',
+          styles: [:bold],
+          link: 'https://example.com/link',
+          callback: recorder,
+        },
+        {
+          text: ' TAIL WORDS THAT WILL NOT FIT AT ALL',
+          styles: [:italic],
+          link: 'https://example.com/overflow',
+          callback: recorder,
+        }
+      ]
+      box = described_class.new(
+        text,
+        document: pdf,
+        at: [0, 460],
+        width: 500,
+        height: 55,
+        size: 12,
+        exclusion_polygons: [polygon],
+      )
+
+      leftover = box.render
+      first_baseline = recorder.fragments.map(&:baseline).min
+      first_line = recorder.fragments.select do |fragment|
+        fragment.baseline == first_baseline
+      end
+
+      linked_parts = first_line.first(2)
+      expect(linked_parts.map(&:text).join).to eq(
+        'bold-link-text-xxxxxxxxxxxxxxxxxxxx '
+      )
+      expect(linked_parts.first.right).to be <= 200
+      expect(linked_parts.last.left).to be >= 300
+      expect(linked_parts.flat_map(&:styles).uniq).to eq([:bold])
+      expect(linked_parts.map(&:link).uniq).to eq([
+        'https://example.com/link'
+      ])
+      leftover_text = leftover.map { |fragment| fragment[:text] }.join
+      expect(leftover_text).to include('NOT FIT')
+      expect(leftover).to include(
+        hash_including(
+          styles: [:italic],
+          link: 'https://example.com/overflow'
+        )
+      )
+      recorder.fragments.each do |fragment|
+        collision = self.class.rectangle_intersects_polygon?(
+          fragment.bounding_box, polygon
+        )
+        expect(collision).to be(false)
+      end
     end
   end
 end

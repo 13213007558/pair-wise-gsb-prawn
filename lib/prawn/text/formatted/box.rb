@@ -170,6 +170,11 @@ module Prawn
         #   The minimum font size to use when `:overflow` is set to
         #   `:shrink_to_fit` (that is the font size will not be reduced to less
         #   than this value, even if it means that some text will be cut off).
+        # @option options :exclusion_polygons
+        #   [Array<Array<Array(Number, Number)>>]
+        #   Polygons in page coordinates whose full line-height footprint must be
+        #   avoided. A single baseline may continue across multiple disconnected
+        #   intervals around a concave polygon.
         def initialize(formatted_text, options = {})
           @inked = false
           Prawn.verify_options(valid_options, options)
@@ -302,21 +307,22 @@ module Prawn
         # @param word_spacing [Number]
         # @return [void]
         def draw_fragment(
-          fragment, accumulated_width = 0, line_width = 0, word_spacing = 0
+          fragment, accumulated_width = 0, line_width = 0,
+          word_spacing = 0, line_left = @at[0], available_width = @width
         )
           case @align
           when :left
-            x = @at[0]
+            x = line_left
           when :center
-            x = @at[0] + (@width * 0.5) - (line_width * 0.5)
+            x = line_left + (available_width * 0.5) - (line_width * 0.5)
           when :right
-            x = @at[0] + @width - line_width
+            x = line_left + available_width - line_width
           when :justify
             x =
               if @direction == :ltr
-                @at[0]
+                line_left
               else
-                @at[0] + @width - line_width
+                line_left + available_width - line_width
               end
           else
             raise ArgumentError,
@@ -413,6 +419,8 @@ module Prawn
             direction
             fallback_fonts
             draw_text_callback
+            exclusion_polygons
+            exclude_polygons
           ]
         end
 
@@ -543,14 +551,6 @@ module Prawn
           end
 
           fragments
-        end
-
-        def move_baseline_down
-          if @baseline_y.zero?
-            @baseline_y = -@ascender
-          else
-            @baseline_y -= (@line_height + @leading)
-          end
         end
 
         # Returns the default height to be used if none is provided or if the

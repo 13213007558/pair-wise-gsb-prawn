@@ -68,7 +68,7 @@ module Prawn
         private
 
         def first_fragment_on_this_line?(fragment)
-          line_empty? && fragment != "\n"
+          @strip_leading_whitespace && line_empty? && fragment != "\n"
         end
 
         def empty_line?(fragment)
@@ -220,6 +220,8 @@ module Prawn
           @width = options[:width]
 
           @disable_wrap_by_char = options[:disable_wrap_by_char]
+          @strip_leading_whitespace =
+            options.fetch(:strip_leading_whitespace, true)
 
           @accumulated_width = 0
           @line_empty = true

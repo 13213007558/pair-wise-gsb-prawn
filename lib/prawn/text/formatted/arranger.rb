@@ -288,6 +288,14 @@ module Prawn
           @unconsumed = new_unconsumed.concat(@unconsumed)
         end
 
+        # Put already finalized fragments back at the front of the queue.
+        #
+        # @param fragments [Array<Hash>]
+        # @return [void]
+        def reconsume(fragments)
+          @unconsumed = fragments.concat(@unconsumed)
+        end
+
         # Get font variant from fragment styles.
         #
         # @param styles [Array<Symbol>]

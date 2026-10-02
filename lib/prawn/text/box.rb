@@ -77,6 +77,10 @@ module Prawn
     #   The minimum font size to use when `:overflow` is set to `:shrink_to_fit`
     #   (that is the font size will not be reduced to less than this value, even
     #   if it means that some text will be cut off).
+    # @option options :exclusion_polygons [Array<Array<Array(Number, Number)>>]
+    #   Polygons in page coordinates whose full line-height footprint must be
+    #   avoided. A single baseline may continue across multiple disconnected
+    #   intervals around a concave polygon.
     # @return [String] Any text that did not print under the current settings.
     # @raise [Prawn::Errors::CannotFit]
     #   If not wide enough to print any text.
@@ -158,10 +162,14 @@ module Prawn
       # @option options :overflow [:truncate, :shrink_to_fit, :expand] (:truncate)
       #   This controls the behavior when the amount of text exceeds the available
       #   space.
-      # @option options :min_font_size [Number] (5)
-      #   The minimum font size to use when `:overflow` is set to `:shrink_to_fit`
-      #   (that is the font size will not be reduced to less than this value, even
-      #   if it means that some text will be cut off).
+    # @option options :min_font_size [Number] (5)
+    #   The minimum font size to use when `:overflow` is set to `:shrink_to_fit`
+    #   (that is the font size will not be reduced to less than this value, even
+    #   if it means that some text will be cut off).
+    # @option options :exclusion_polygons [Array<Array<Array(Number, Number)>>]
+    #   Polygons in page coordinates whose full line-height footprint must be
+    #   avoided. A single baseline may continue across multiple disconnected
+    #   intervals around a concave polygon.
       def initialize(string, options = {})
         super([{ text: string }], options)
       end
