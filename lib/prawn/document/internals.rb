@@ -28,8 +28,15 @@ module Prawn
       # @return [void]
       def save_graphics_state(state = nil, &block)
         save_transformation_stack
-        renderer.save_graphics_state(state, &block)
-        restore_transformation_stack if block
+        renderer.save_graphics_state(state)
+
+        if block
+          begin
+            block.call
+          ensure
+            restore_graphics_state
+          end
+        end
       end
 
       # Restore graphic state.
@@ -38,6 +45,7 @@ module Prawn
       def restore_graphics_state
         restore_transformation_stack
         renderer.restore_graphics_state
+        mark_color_spaces_for_revalidation
       end
 
       # @devnote

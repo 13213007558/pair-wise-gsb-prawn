@@ -6,6 +6,216 @@ module Prawn
     module Color
       # @group Stable API
 
+      # A color space stored in a page's +/ColorSpace+ resource dictionary.
+      class DefinedColorSpace
+        attr_reader :family, :names, :alternate_color_space, :tint_transform,
+                    :attributes, :resource_name
+
+        def initialize(
+          family, names, alternate_color_space, tint_transform,
+          reference, resource_name, attributes = nil
+        )
+          @family = family
+          @names = names.freeze
+          @alternate_color_space = alternate_color_space
+          @tint_transform = tint_transform
+          @reference = reference
+          @resource_name = resource_name
+          @attributes = attributes
+
+          freeze
+        end
+
+        def color(*tints)
+          tints = tints.flatten
+          tints = Array.new(names.length, 1.0) if tints.empty?
+
+          unless tints.length == names.length
+            raise ArgumentError,
+              "expected #{names.length} tint value(s), got #{tints.length}"
+          end
+
+          unless tints.all?(Numeric) && tints.all? { |tint| (0..1).cover?(tint) }
+            raise ArgumentError, 'tint values must be numbers between 0 and 1'
+          end
+
+          SpecialColor.new(self, tints.freeze)
+        end
+
+        def components
+          names
+        end
+
+        def specification
+          {
+            family: family,
+            names: names,
+            alternate_color_space: alternate_color_space,
+            tint_transform: tint_transform_specification,
+            attributes: attributes,
+          }
+        end
+
+        def ==(other)
+          other.is_a?(self.class) && other.specification == specification
+        end
+
+        alias eql? ==
+
+        def hash
+          specification.hash
+        end
+
+        def to_pdf
+          @reference
+        end
+
+        private
+
+        def tint_transform_specification
+          if @tint_transform.is_a?(::Hash)
+            specification = @tint_transform.reject do |key|
+              %i[stream program].include?(key)
+            end
+            program = @tint_transform[:stream] || @tint_transform[:program]
+            specification[:stream] = program if program
+            specification
+          else
+            specification = @tint_transform.data.dup
+            program = @tint_transform.stream.filtered_stream
+            specification[:stream] = program if program
+            specification
+          end
+        end
+      end
+
+      # A color value in a {DefinedColorSpace}.
+      class SpecialColor
+        attr_reader :color_space, :tints
+
+        def initialize(color_space, tints)
+          @color_space = color_space
+          @tints = tints
+          freeze
+        end
+
+        def ==(other)
+          other.is_a?(self.class) &&
+            other.color_space == color_space &&
+            other.tints == tints
+        end
+
+        alias eql? ==
+
+        def hash
+          [color_space, tints].hash
+        end
+      end
+
+      # Declares a Separation color space for one spot colorant.
+      #
+      # Re-declaring the same colorant with an identical alternate color
+      # space and tint transform returns the existing definition. An
+      # inconsistent re-declaration raises ArgumentError.
+      #
+      # @example
+      #   brand_red = pdf.define_separation_color_space(
+      #     :BrandRed, :DeviceRGB,
+      #     FunctionType: 2,
+      #     Domain: [0.0, 1.0],
+      #     C0: [0.0, 0.0, 0.0],
+      #     C1: [1.0, 0.0, 0.0],
+      #     N: 1.0,
+      #   )
+      #   pdf.fill_color(brand_red, 0.75)
+      #
+      # @param name [Symbol, String] spot colorant name
+      # @param alternate_color_space [Symbol, Array] alternate color space
+      # @param tint_transform [Hash, PDF::Core::Reference] PDF function used
+      #   to map the tint into the alternate color space
+      # @return [DefinedColorSpace]
+      def define_separation_color_space(
+        name, *arguments,
+        alternate_color_space: nil, alternate: nil, tint_transform: nil
+      )
+        alternate_color_space ||=
+          normalize_alternate_color_space(
+            alternate || arguments[0] || :DeviceRGB
+          )
+        tint_transform ||= arguments[1]
+
+        name = normalize_colorant_name(name)
+        definition = DefinedColorSpace.new(
+          :Separation, [name], alternate_color_space,
+          normalize_tint_transform_input(tint_transform), nil, nil
+        )
+
+        if (existing = separation_color_spaces[name]) && existing != definition
+          raise ArgumentError,
+            "spot color #{name.inspect} is already defined with a different " \
+              'alternate color space or tint transform'
+        end
+
+        separation_color_spaces[name] ||=
+          create_defined_color_space(definition)
+      end
+
+      alias separation_color_space define_separation_color_space
+      alias define_separation define_separation_color_space
+
+      # Declares a DeviceN color space for one or more spot colorants.
+      #
+      # DeviceN definitions with different transforms receive distinct
+      # resource names, so they cannot silently replace one another.
+      #
+      # @example
+      #   mix = pdf.define_device_n_color_space(
+      #     [:BrandRed, :BrandBlue],
+      #     alternate_color_space: :DeviceRGB,
+      #     tint_transform: {
+      #       FunctionType: 4,
+      #       Domain: [0.0, 1.0, 0.0, 1.0],
+      #       Range: [0.0, 1.0] * 3,
+      #       stream: '{ 1 index 0 }',
+      #     },
+      #   )
+      #   pdf.fill_color(mix, 0.25, 0.75)
+      #
+      # @param names [Array<Symbol, String>] spot colorant names
+      # @param alternate_color_space [Symbol, Array] alternate color space
+      # @param tint_transform [Hash, PDF::Core::Reference] PDF function used
+      #   to map all tints into the alternate color space
+      # @param attributes [Hash, nil] optional DeviceN attributes dictionary
+      # @return [DefinedColorSpace]
+      def define_device_n_color_space(
+        names, *arguments,
+        alternate_color_space: nil, alternate: nil,
+        tint_transform: nil, attributes: nil
+      )
+        alternate_color_space ||=
+          normalize_alternate_color_space(
+            alternate || arguments[0] || :DeviceRGB
+          )
+        tint_transform ||= arguments[1]
+        attributes ||= arguments[2]
+
+        names = Array(names).flatten.map { |name| normalize_colorant_name(name) }
+        if names.empty?
+          raise ArgumentError, 'DeviceN color spaces require at least one name'
+        end
+
+        definition = DefinedColorSpace.new(
+          :DeviceN, names, alternate_color_space,
+          normalize_tint_transform_input(tint_transform), nil, nil, attributes
+        )
+
+        device_n_color_spaces[definition.specification] ||=
+          create_defined_color_space(definition)
+      end
+
+      alias device_n_color_space define_device_n_color_space
+      alias define_device_n define_device_n_color_space
+
       # Sets or returns the fill color.
       #
       # @overload fill_color
@@ -107,7 +317,107 @@ module Prawn
 
       private
 
+      def normalize_colorant_name(name)
+        case name
+        when Symbol, String
+          raise ArgumentError, 'colorant name cannot be empty' if name.empty?
+
+          name.to_sym
+        else
+          raise ArgumentError, "invalid colorant name: #{name.inspect}"
+        end
+      end
+
+      def normalize_alternate_color_space(color_space)
+        case color_space
+        when String
+          color_space.to_sym
+        when Array
+          color_space.map do |item|
+            item.is_a?(String) ? item.to_sym : item
+          end
+        else
+          color_space
+        end
+      end
+
+      def normalize_tint_transform_input(tint_transform)
+        case tint_transform
+        when PDF::Core::Reference
+          tint_transform
+        when Hash
+          tint_transform.dup
+        else
+          raise ArgumentError,
+            'tint transform must be a PDF function dictionary or reference'
+        end
+      end
+
+      def build_tint_transform(tint_transform)
+        return tint_transform if tint_transform.is_a?(PDF::Core::Reference)
+
+        data = tint_transform.dup
+        program = data.delete(:stream) || data.delete(:program)
+        reference = ref!(data)
+        reference << program if program
+        reference
+      end
+
+      def create_defined_color_space(definition)
+        function = build_tint_transform(definition.tint_transform)
+        color_space_array =
+          case definition.family
+          when :Separation
+            [
+              :Separation,
+              definition.names.first,
+              definition.alternate_color_space,
+              function,
+            ]
+          when :DeviceN
+            [
+              :DeviceN,
+              definition.names,
+              definition.alternate_color_space,
+              function,
+            ].tap do |array|
+              array << definition.attributes if definition.attributes
+            end
+          end
+
+        reference = ref!(color_space_array)
+        resource_name = next_color_space_name
+
+        DefinedColorSpace.new(
+          definition.family,
+          definition.names,
+          definition.alternate_color_space,
+          function,
+          reference,
+          resource_name,
+          definition.attributes,
+        )
+      end
+
+      def next_color_space_name
+        @defined_color_space_count = (@defined_color_space_count || 0) + 1
+        "PrawnCS#{@defined_color_space_count}".to_sym
+      end
+
+      def separation_color_spaces
+        @separation_color_spaces ||= {}
+      end
+
+      def device_n_color_spaces
+        @device_n_color_spaces ||= {}
+      end
+
       def process_color(*color)
+        if color.first.is_a?(DefinedColorSpace)
+          color_space = color.first
+          return color_space.color(*color[1..])
+        end
+
         case color.size
         when 1
           color[0]
@@ -135,6 +445,8 @@ module Prawn
           else
             raise ArgumentError, "Unknown type of color: #{color.inspect}"
           end
+        when SpecialColor
+          :Special
         end
       end
 
@@ -146,6 +458,8 @@ module Prawn
         when :CMYK
           c, m, y, k = *color
           [c / 100.0, m / 100.0, y / 100.0, k / 100.0]
+        when :Special
+          color.tints
         end
       end
 
@@ -159,21 +473,26 @@ module Prawn
           :DeviceRGB
         when :CMYK
           :DeviceCMYK
+        when :Special
+          color.color_space
         end
       end
 
-      COLOR_SPACES = %i[DeviceRGB DeviceCMYK Pattern].freeze
+      BUILT_IN_COLOR_SPACES = %i[DeviceRGB DeviceCMYK Pattern].freeze
 
       def set_color_space(type, color_space)
         # don't set the same color space again
-        if current_color_space(type) == color_space &&
+        revalidate = color_space_revalidation_required?(type)
+        if !revalidate && current_color_space(type) == color_space &&
             !state.page.in_stamp_stream?
           return
         end
 
         set_current_color_space(color_space, type)
+        clear_color_space_revalidation(type)
 
-        unless COLOR_SPACES.include?(color_space)
+        unless color_space.is_a?(DefinedColorSpace) ||
+            BUILT_IN_COLOR_SPACES.include?(color_space)
           raise ArgumentError, "unknown color space: '#{color_space}'"
         end
 
@@ -187,7 +506,17 @@ module Prawn
             raise ArgumentError, "unknown type '#{type}'"
           end
 
-        renderer.add_content("/#{color_space} #{operator}")
+        if color_space.is_a?(DefinedColorSpace)
+          register_color_space(color_space)
+          renderer.add_content("/#{color_space.resource_name} #{operator}")
+        else
+          renderer.add_content("/#{color_space} #{operator}")
+        end
+      end
+
+      def register_color_space(color_space)
+        color_spaces = page.resources[:ColorSpace] ||= {}
+        color_spaces[color_space.resource_name] ||= color_space.to_pdf
       end
 
       def set_color(type, color, options = {})
@@ -231,6 +560,20 @@ module Prawn
       def set_current_color_space(color_space, type)
         save_graphics_state if graphic_state.nil?
         graphic_state.color_space[type] = color_space
+      end
+
+      def mark_color_spaces_for_revalidation
+        current_state = state.page.stack.current_state
+        @color_spaces_requiring_revalidation =
+          current_state ? current_state.color_space.keys : []
+      end
+
+      def color_space_revalidation_required?(type)
+        @color_spaces_requiring_revalidation&.include?(type)
+      end
+
+      def clear_color_space_revalidation(type)
+        @color_spaces_requiring_revalidation&.delete(type)
       end
 
       def current_fill_color
