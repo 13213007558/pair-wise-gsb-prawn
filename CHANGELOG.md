@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+### Vertical (CJK) text boxes
+
+Added `vertical_text_box` that lays out text top to bottom with columns
+running right to left. It uses the font's vertical metrics (`vhea`/`vmtx`
+tables) and the vertical glyph variants the font designates (GSUB `vert`/
+`vrt2` features), so brackets, commas, and other punctuation are placed
+correctly instead of just rotating the whole line.
+
+Latin-script characters are handled according to the document-wide
+`vertical_latin_rule` (`:rotate` for sideways runs, `:upright` to set
+them with vertical metrics like CJK characters), which can be overridden
+per box with the `:latin_rule` option.
+
+Column breaking, box overflow (`:truncate`, `:expand`, `:shrink_to_fit`),
+and link annotation areas all follow the vertical layout. Only OpenType
+fonts that contain vertical metrics tables are supported;
+`Prawn::Errors::UnsupportedVerticalFont` is raised for any other font.
+
+### Fixed ToUnicode CMap generation for certain subsets
+
+Subsets whose character codes mapped to non-consecutive Unicode code
+points in a specific pattern could get a corrupted ToUnicode CMap (dropped
+or duplicated entries), breaking text extraction.
+
 ## PrawnPDF 2.5.0
 
 ### Full font embedding

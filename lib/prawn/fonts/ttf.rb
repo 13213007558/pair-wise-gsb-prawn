@@ -10,6 +10,9 @@
 require 'ttfunk'
 require 'ttfunk/subset_collection'
 require_relative 'to_unicode_cmap'
+require_relative 'vertical_metrics'
+require_relative 'gsub'
+require_relative 'subset_collection'
 
 module Prawn
   module Fonts
@@ -50,6 +53,13 @@ module Prawn
 
         # @private
         MESSAGE_WITH_FONT = 'Can not detect a postscript name in font %<font>s'
+      end
+
+      # Signals that the font doesn't provide vertical metrics.
+      class NoVerticalMetrics < Error
+        # @private
+        DEFAULT_MESSAGE =
+          'No vertical metrics (vhea/vmtx tables) found in font'
       end
 
       # TTFunk font.
@@ -113,6 +123,25 @@ module Prawn
           ]
         end
 
+        # Encode characters, using explicitly chosen glyphs where provided.
+        #
+        # @param pairs [Array<Array(Integer, Integer, nil)>]
+        #   pairs of Unicode codepoint and glyph ID (or nil to use the regular
+        #   cmap-derived glyph)
+        # @return [Array<Array(FULL_FONT, String)>]
+        def encode_glyph_pairs(pairs)
+          [
+            [
+              FULL_FONT,
+              pairs.map { |(c, glyph_id)|
+                glyph_id ||= cmap[c]
+                check_bounds!(glyph_id)
+                [glyph_id].pack('n')
+              }.join(''),
+            ],
+          ]
+        end
+
         private
 
         attr_reader :cmap
@@ -139,7 +168,7 @@ module Prawn
           if full_font_embedding
             FullFontSubsetsCollection.new(@ttf)
           else
-            TTFunk::SubsetCollection.new(@ttf)
+            Prawn::Fonts::SubsetCollection.new(@ttf)
           end
         @italic_angle = nil
 
@@ -192,6 +221,88 @@ module Prawn
         @has_kerning_data
       end
 
+      # Does this font contain vertical metrics (vhea/vmtx tables) required
+      # for vertical typesetting?
+      #
+      # @return [Boolean]
+      def vertical_metrics?
+        !vertical_metrics.nil?
+      end
+
+      # Vertical metrics of this font.
+      #
+      # @return [Prawn::Fonts::VerticalMetrics, nil]
+      def vertical_metrics
+        return @vertical_metrics if defined?(@vertical_metrics)
+
+        @vertical_metrics = VerticalMetrics.for(@ttf)
+      end
+
+      # Does this font designate vertical glyph variants (via the GSUB vert
+      # or vrt2 features)?
+      #
+      # @return [Boolean]
+      def vertical_substitutions?
+        !gsub.nil?
+      end
+
+      # Get the glyph to use for the character in vertical writing. This is
+      # the vertical variant designated by the font (GSUB vert/vrt2 features)
+      # when available, and the regular cmap glyph otherwise.
+      #
+      # @param code [Integer] Unicode codepoint
+      # @return [Integer] glyph ID
+      def vertical_glyph_for(code)
+        vertical_substitute_for(code) || cmap[code]
+      end
+
+      # Get the vertical variant designated by the font for the character.
+      #
+      # @param code [Integer] Unicode codepoint
+      # @return [Integer, nil]
+      #   glyph ID of the vertical variant, or nil if the font doesn't
+      #   designate one
+      def vertical_substitute_for(code)
+        gsub&.substitute(cmap[code])
+      end
+
+      # Vertical advance of the character (distance between the vertical
+      # origins of consecutive glyphs), normalized to a 1000-unit em.
+      #
+      # @param code [Integer] Unicode codepoint
+      # @return [Number]
+      # @raise [Prawn::Fonts::TTF::NoVerticalMetrics]
+      #   if the font contains no vertical metrics
+      def vertical_advance_for(code)
+        metrics = vertical_metrics || raise_no_vertical_metrics!
+
+        metrics.advance_height(vertical_glyph_for(code)) * scale_factor
+      end
+
+      # Vertical origin of the character, normalized to a 1000-unit em. The
+      # origin comes from the VORG table when the font provides one;
+      # otherwise it defaults to the center of the horizontal advance at the
+      # vertical ascender, as recommended by the OpenType specification.
+      #
+      # @param code [Integer] Unicode codepoint
+      # @return [Array(Number, Number)]
+      # @raise [Prawn::Fonts::TTF::NoVerticalMetrics]
+      #   if the font contains no vertical metrics
+      def vertical_origin_for(code)
+        metrics = vertical_metrics || raise_no_vertical_metrics!
+
+        glyph_id = vertical_glyph_for(code)
+        x = hmtx.widths[glyph_id] / 2.0
+        y =
+          if @ttf.vertical_origins
+            @ttf.vertical_origins.for(glyph_id)
+          else
+            metrics.ascender
+          end
+
+        [x * scale_factor, y * scale_factor]
+      end
+
       # Perform any changes to the string that need to happen before it is
       # rendered to the canvas. Returns an array of subset "chunks", where the
       # even-numbered indices are the font subset number, and the following
@@ -200,9 +311,19 @@ module Prawn
       # @param text [String] must be in UTF-8 encoding
       # @param options [Hash{Symbol => any}]
       # @option options :kerning [Boolean]
+      # @option options :vertical_substitutions [Hash{Integer => Integer, nil}]
+      #   Maps Unicode codepoints to glyph IDs to render them with instead of
+      #   the regular cmap-derived glyphs. Used for vertical glyph
+      #   substitution.
       # @return [Array<Array(0, (String, Array)>]
       def encode_text(text, options = {})
         text = text.chomp
+
+        if options[:vertical_substitutions]
+          substitutions = options[:vertical_substitutions]
+          pairs = text.codepoints.map { |c| [c, substitutions[c]] }
+          return @subsets.encode_glyph_pairs(pairs)
+        end
 
         if options[:kerning]
           last_subset = nil
@@ -390,6 +511,17 @@ module Prawn
           else
             {}
           end
+      end
+
+      def gsub
+        return @gsub if defined?(@gsub)
+
+        @gsub = GSUB.for(@ttf)
+      end
+
+      def raise_no_vertical_metrics!
+        raise NoVerticalMetrics,
+          "#{NoVerticalMetrics::DEFAULT_MESSAGE} #{name}"
       end
 
       def hmtx

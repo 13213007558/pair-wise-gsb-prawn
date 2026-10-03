@@ -69,5 +69,10 @@ module Prawn
 
     # This error is raised when an incompatible join style is specified.
     InvalidJoinStyle = Class.new(StandardError)
+
+    # This error is raised when vertical text layout is requested but the
+    # font in use doesn't provide the required OpenType vertical metrics
+    # (vhea/vmtx tables).
+    UnsupportedVerticalFont = Class.new(StandardError)
   end
 end

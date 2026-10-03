@@ -95,6 +95,7 @@ Prawn::ManualBuilder::Manual.new(__dir__, page_size: 'A4') do
       chapter 'text/utf8'
       chapter 'text/line_wrapping'
       chapter 'text/right_to_left_text'
+      chapter 'text/vertical_text'
       chapter 'text/fallback_fonts'
       chapter 'text/win_ansi_charset'
     end

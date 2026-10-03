@@ -4,6 +4,7 @@ require 'zlib'
 
 require_relative 'text/formatted'
 require_relative 'text/box'
+require_relative 'text/vertical/box'
 
 module Prawn
   # PDF text primitives.
@@ -588,6 +589,114 @@ module Prawn
       height += box.line_gap + box.leading if @final_gap
       height
     end
+
+    # Draws the requested text into a vertical (CJK) text box.
+    #
+    # Text is laid out top to bottom, columns right to left, using the
+    # font's vertical metrics (vhea/vmtx OpenType tables) and the
+    # vertical glyph variants the font designates (GSUB vert/vrt2
+    # features). Only OpenType fonts that contain vertical metrics tables
+    # can be used; {Prawn::Errors::UnsupportedVerticalFont} is raised for
+    # any other font.
+    #
+    # Latin-script characters are handled according to
+    # {#vertical_latin_rule} or the `:latin_rule` option.
+    #
+    # @example
+    #   pdf.font('Kai.ttf')
+    #   pdf.vertical_text_box(
+    #     '竖排文本', at: [100, 600], width: 200, height: 400
+    #   )
+    #
+    # @param text [String, Array<Hash{Symbol => any}>]
+    #   The text to typeset. It can be a string (optionally formatted with
+    #   the `:inline_format` option) or a formatted text array like the
+    #   one {Prawn::Text::Formatted#formatted_text_box} accepts.
+    # @param options [Hash{Symbol => any}]
+    # @option options :inline_format [Boolean]
+    #   If `true` and `text` is a string, then the string is interpreted
+    #   as a HTML-esque string (see {#text} for the list of recognized
+    #   tags).
+    # @option options :at [Array(Number, Number)]
+    #   (bounds top left corner) The upper left corner of the box.
+    # @option options :width [Number] (bounds.right - at[0])
+    #   The width of the box (the space available for columns).
+    # @option options :height [Number]
+    #   The height of the box (the length of each column).
+    # @option options :size [Number] (current font size)
+    #   The font size to use.
+    # @option options :align [:right, :center, :left] (:right)
+    #   Alignment of the text block along the box width.
+    # @option options :valign [:top, :center, :bottom] (:top)
+    #   Alignment of the text block along the box height.
+    # @option options :leading [Number] (value of document.default_leading)
+    #   Additional space between columns.
+    # @option options :overflow [:truncate, :shrink_to_fit, :expand]
+    #   (:truncate) The behavior when the text exceeds the available
+    #   space.
+    # @option options :min_font_size [Number] (5)
+    #   The minimum font size to use when `:overflow` is set to
+    #   `:shrink_to_fit`.
+    # @option options :latin_rule [:rotate, :upright]
+    #   (value of document.vertical_latin_rule) How to set Latin-script
+    #   characters: rotated 90 degrees clockwise (`:rotate`) or upright
+    #   using vertical metrics (`:upright`).
+    # @return [Array<Hash>]
+    #   A formatted text array representing any text that did not print
+    #   under the current settings.
+    # @raise [Prawn::Errors::UnsupportedVerticalFont]
+    #   If a used font doesn't provide vertical metrics.
+    # @raise [Prawn::Errors::CannotFit]
+    #   If the box is too narrow to fit any column of text.
+    def vertical_text_box(text, options = {})
+      options = options.dup
+      options[:document] = self
+
+      array =
+        if text.is_a?(Array)
+          text
+        elsif options[:inline_format]
+          p = options.delete(:inline_format)
+          p = [] unless p.is_a?(Array)
+          text_formatter.format(text, *p)
+        else
+          [{ text: text }]
+        end
+
+      Text::Vertical::Box.new(array, options).render
+    end
+
+    # The rule for typesetting Latin-script characters in vertical text,
+    # declared document-wide. It can be overridden for individual boxes
+    # with the `:latin_rule` option of {#vertical_text_box}.
+    #
+    # - `:rotate` (default) --- Latin runs are rotated 90 degrees
+    #   clockwise (the so-called \"sideways\" rule).
+    # - `:upright` --- Latin characters are set upright using the font's
+    #   vertical metrics, like CJK characters.
+    #
+    # @example
+    #   pdf.vertical_latin_rule = :upright
+    #
+    # @overload vertical_latin_rule
+    #   @return [:rotate, :upright]
+    # @overload vertical_latin_rule=(rule)
+    #   @param rule [:rotate, :upright]
+    #   @return [void]
+    def vertical_latin_rule(rule = nil)
+      if rule.nil?
+        (defined?(@vertical_latin_rule) && @vertical_latin_rule) || :rotate
+      else
+        unless %i[rotate upright].include?(rule)
+          raise ArgumentError,
+            'vertical_latin_rule must be one of :rotate or :upright symbols'
+        end
+
+        @vertical_latin_rule = rule
+      end
+    end
+
+    alias vertical_latin_rule= vertical_latin_rule
 
     private
 

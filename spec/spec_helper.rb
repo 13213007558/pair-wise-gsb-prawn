@@ -24,6 +24,7 @@ Dir[File.join(__dir__, 'extensions', '**', '*.rb')].sort.each { |f| require f }
 
 RSpec.configure do |config|
   config.include(EncodingHelpers)
+  config.include(VerticalFontHelpers)
 end
 
 # Create a document.
