@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'formatted/wrap'
+require_relative 'formatted/vertical_wrap'
 
 module Prawn
   module Text

@@ -510,6 +510,42 @@ module Prawn
         end
     end
 
+    # Identifier used for vertical full-font embedding.
+    #
+    # @private
+    # @return [Symbol]
+    def vertical_identifier
+      @vertical_identifier ||= :"#{@identifier}V"
+    end
+
+    # Identifier used for full horizontal font resources in vertical runs.
+    #
+    # @private
+    # @return [Symbol]
+    def horizontal_vertical_identifier
+      @horizontal_vertical_identifier ||= :"#{@identifier}VH"
+    end
+
+    # Register vertical font resources on the current page.
+    #
+    # @private
+    # @return [void]
+    def add_vertical_to_current_page
+      raise Errors::UnsupportedVerticalFont,
+        'vertical writing requires an embedded TTF/OTF font with vhea and '
+        'vmtx tables'
+    end
+
+    # Draw a glyph using the font's vertical metrics.
+    #
+    # @private
+    # @return [void]
+    def draw_vertical_glyph(_document, _glyph_id, _x, _y, _rotated)
+      raise Errors::UnsupportedVerticalFont,
+        'vertical writing requires an embedded TTF/OTF font with vhea and '
+        'vmtx tables'
+    end
+
     # Returns a string containing a human-readable representation of this font.
     #
     # @return [String]

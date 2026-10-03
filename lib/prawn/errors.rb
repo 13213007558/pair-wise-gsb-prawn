@@ -6,6 +6,9 @@ module Prawn
     # Raised when a table is spanned in an impossible way.
     InvalidTableSpan = Class.new(StandardError)
 
+    # Raised when a font cannot be used for vertical CJK text.
+    UnsupportedVerticalFont = Class.new(StandardError)
+
     # This error is raised when a method requiring a current page is called
     # without being on a page.
     NotOnPage = Class.new(StandardError)

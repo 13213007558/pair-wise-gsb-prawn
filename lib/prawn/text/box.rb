@@ -49,6 +49,9 @@ module Prawn
     #   The height of the box.
     # @option options :direction [:ltr, :rtl] (value of document.text_direction)
     #   Direction of the text (left-to-right or right-to-left).
+    # @option options :writing_mode [:horizontal_tb, :vertical_rl]
+    #   (:horizontal_tb) Use `:vertical_rl` for top-to-bottom, right-to-left
+    #   CJK text. Requires an embedded TTF/OTF font with `vhea` and `vmtx`.
     # @option options :fallback_fonts [Array<String>]
     #   An array of font names. Each name must be the name of an AFM font or the
     #   name that was used to register a family of external fonts (see
@@ -134,6 +137,9 @@ module Prawn
       #   The height of the box.
       # @option options :direction [:ltr, :rtl] (value of document.text_direction)
       #   Direction of the text (left-to-right or right-to-left).
+      # @option options :writing_mode [:horizontal_tb, :vertical_rl]
+      #   (:horizontal_tb) Use `:vertical_rl` for top-to-bottom, right-to-left
+      #   CJK text. Requires an embedded TTF/OTF font with `vhea` and `vmtx`.
       # @option options :fallback_fonts [Array<String>]
       #   An array of font names. Each name must be the name of an AFM font or the
       #   name that was used to register a family of external fonts (see

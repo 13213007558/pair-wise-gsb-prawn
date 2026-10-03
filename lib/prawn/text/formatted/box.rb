@@ -19,6 +19,7 @@ module Prawn
       # space was consumed by the printed text
       class Box
         include Prawn::Text::Formatted::Wrap
+        prepend Prawn::Text::Formatted::VerticalWrap
 
         # @group Experimental API
 
@@ -141,6 +142,11 @@ module Prawn
         # @option options :direction [:ltr, :rtl]
         #   (value of document.text_direction)
         #   Direction of the text (left-to-right or right-to-left).
+        # @option options :writing_mode [:horizontal_tb, :vertical_rl]
+        #   (:horizontal_tb) Set to `:vertical_rl` for top-to-bottom,
+        #   right-to-left CJK writing. This requires an embedded TTF/OTF font
+        #   containing `vhea` and `vmtx`; `GSUB` `vrt2`/`vert` single
+        #   substitutions are used when present.
         # @option options :fallback_fonts [Array<String>]
         #   An array of font names. Each name must be the name of an AFM font or
         #   the name that was used to register a family of external fonts (see
@@ -178,6 +184,7 @@ module Prawn
           self.class.extensions.reverse_each { |e| extend(e) }
 
           @overflow = options[:overflow] || :truncate
+          @writing_mode = options[:writing_mode] || :horizontal_tb
           @disable_wrap_by_char = options[:disable_wrap_by_char]
 
           self.original_text = formatted_text
@@ -259,11 +266,14 @@ module Prawn
                 text = normalized_text(flags)
 
                 @document.font_size(@font_size) do
-                  shrink_to_fit(text) if @overflow == :shrink_to_fit
-                  process_vertical_alignment(text)
+                  shrink_to_fit(text) if @overflow == :shrink_to_fit &&
+                    @writing_mode != :vertical_rl
+                  process_vertical_alignment(text) unless @writing_mode == :vertical_rl
                   @inked = true unless flags[:dry_run]
                   unprinted_text =
-                    if @rotate != 0 && @inked
+                    if @writing_mode == :vertical_rl
+                      wrap(text)
+                    elsif @rotate != 0 && @inked
                       render_rotated(text)
                     else
                       wrap(text)
@@ -291,8 +301,13 @@ module Prawn
         # @return [Number]
         def height
           return 0 if @baseline_y.nil? || @descender.nil?
+          return vertical_used_height if @writing_mode == :vertical_rl
 
           (@baseline_y - @descender).abs
+        end
+
+        def vertical_used_height
+          @vertical_used_height || @height
         end
 
         # @private
@@ -411,12 +426,17 @@ module Prawn
             mode single_line
             document
             direction
+            writing_mode
             fallback_fonts
             draw_text_callback
           ]
         end
 
         private
+
+        def vertical_writing?
+          @writing_mode == :vertical_rl
+        end
 
         def normalized_text(flags)
           text = normalize_encoding

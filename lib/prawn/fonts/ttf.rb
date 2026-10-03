@@ -146,6 +146,7 @@ module Prawn
         @attributes = {}
         @bounding_boxes = {}
         @char_widths = {}
+        @vertical_references = {}
         @has_kerning_data = @ttf.kerning.exists? && @ttf.kerning.tables.any?
 
         @ascender = Integer(@ttf.ascent * scale_factor)
@@ -347,6 +348,94 @@ module Prawn
         cmap[code].positive?
       end
 
+      # Vertical metrics and substitutions for this font.
+      #
+      # @private
+      # @return [VerticalData]
+      def vertical_data
+        @vertical_data ||= VerticalData.new(@ttf)
+      end
+
+      # Does this font provide the required vertical font tables?
+      #
+      # @private
+      # @return [Boolean]
+      def vertical?
+        vertical_data
+        true
+      rescue VerticalData::UnsupportedFont
+        false
+      end
+
+      # Register full-font vertical resources on the current page.
+      #
+      # @private
+      # @return [void]
+      def add_vertical_to_current_page
+        @vertical_references[:vertical] ||= register_vertical
+        @document.state.page.fonts[vertical_identifier] =
+          @vertical_references[:vertical]
+      end
+
+      # Register full-font horizontal resources used for sideways Latin runs.
+      #
+      # @private
+      # @return [void]
+      def add_horizontal_full_to_current_page
+        if full_font_embedding
+          add_to_current_page(nil)
+        else
+          @vertical_references[:horizontal] ||= register_full_font
+          @document.state.page.fonts[horizontal_vertical_identifier] =
+            @vertical_references[:horizontal]
+        end
+      end
+
+      # Encode and position one original-font glyph ID in vertical mode.
+      #
+      # @private
+      # @return [void]
+      def draw_vertical_glyph(document, glyph_id, x, y, rotated = false)
+        if rotated
+          add_horizontal_full_to_current_page
+        else
+          add_vertical_to_current_page
+        end
+
+        encoded = [glyph_id].pack('n')
+        document.renderer.add_content("\nBT")
+        if rotated
+          document.renderer.add_content(
+            "0 1 -1 0 #{PDF::Core.real(x)} #{PDF::Core.real(y)} Tm",
+          )
+        else
+          document.renderer.add_content(
+            "1 0 0 1 #{PDF::Core.real(x)} #{PDF::Core.real(y)} Tm",
+          )
+        end
+        document.renderer.add_content(
+          [
+            PDF::Core.pdf_object(horizontal_font_identifier(rotated), true),
+            PDF::Core.pdf_object(size, true),
+            'Tf',
+          ].join(' '),
+        )
+        document.renderer.add_content(
+          "#{PDF::Core.pdf_object(encoded, true)} Tj",
+        )
+        document.renderer.add_content("ET\n")
+      end
+
+      def horizontal_font_identifier(rotated)
+        return vertical_identifier unless rotated
+
+        if full_font_embedding
+          identifier_for(nil)
+        else
+          horizontal_vertical_identifier
+        end
+      end
+
       # Returns the number of characters in `str` (a UTF-8-encoded string).
       #
       # @param str [String]
@@ -411,6 +500,8 @@ module Prawn
       end
 
       def register(subset)
+        return register_full_font if subset.nil?
+
         temp_name = @ttf.name.postscript_name.delete("\0").to_sym
         ref = @document.ref!(Type: :Font, BaseFont: temp_name)
 
@@ -418,6 +509,18 @@ module Prawn
         # drawn, just before the document is emitted.
         @document.renderer.before_render { |_doc| embed(ref, subset) }
 
+        ref
+      end
+
+      def register_full_font
+        ref = @document.ref!(Type: :Font, BaseFont: @ttf.name.postscript_name)
+        @document.renderer.before_render { |_doc| embed_full_font(ref) }
+        ref
+      end
+
+      def register_vertical
+        ref = @document.ref!(Type: :Font, BaseFont: @ttf.name.postscript_name)
+        @document.renderer.before_render { |_doc| embed_vertical(ref) }
         ref
       end
 
@@ -520,7 +623,11 @@ module Prawn
         embed_composite_font(reference, @ttf)
       end
 
-      def embed_composite_font(reference, font)
+      def embed_vertical(reference)
+        embed_composite_font(reference, @ttf, vertical: true)
+      end
+
+      def embed_composite_font(reference, font, vertical: false)
         if font_type(font) == :unknown
           raise Error, %(Composite font embedding is not uspported for font "#{font.name}.")
         end
@@ -567,7 +674,7 @@ module Prawn
         widths =
           font.horizontal_metrics.widths.map { |w| (w * scale_factor).round }
 
-        child_font = @document.ref!(
+        child_attributes = {
           Type: :Font,
           BaseFont: basename.to_sym,
           CIDSystemInfo: {
@@ -577,7 +684,17 @@ module Prawn
           },
           FontDescriptor: descriptor,
           W: [0, widths],
-        )
+        }
+
+        if vertical
+          child_attributes.delete(:W)
+          child_attributes[:DW2] = [880, -1000]
+          child_attributes[:W2] = vertical_w2(font)
+        else
+          child_attributes[:W] = [0, widths]
+        end
+
+        child_font = @document.ref!(child_attributes)
         if true_type
           child_font.data.update(
             Subtype: :CIDFontType2,
@@ -591,10 +708,26 @@ module Prawn
         reference.data.update(
           Subtype: :Type0,
           BaseFont: basename.to_sym,
-          Encoding: :'Identity-H',
+          Encoding: vertical ? :'Identity-V' : :'Identity-H',
           DescendantFonts: [child_font],
           ToUnicode: to_unicode,
         )
+      end
+
+      def vertical_w2(font)
+        data = vertical_data
+        count = font.maximum_profile.num_glyphs
+        count.times.map do |glyph_id|
+          [
+            glyph_id,
+            glyph_id,
+            data.vertical_origin_y(glyph_id) * scale_factor,
+            -(font.horizontal_metrics.for(glyph_id).advance_width / 2.0 *
+              scale_factor),
+            -(data.vertical_origin_y(glyph_id) * scale_factor),
+            data.advance_height(glyph_id) * scale_factor,
+          ]
+        end
       end
 
       def font_type(font)
