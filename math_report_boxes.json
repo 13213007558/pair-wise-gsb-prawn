@@ -1,0 +1,1678 @@
+{
+  "coordinate_system": "PDF points; origin at the bottom-left of the page",
+  "fonts": {
+    "PrawnMath": {
+      "normal": "DejaVuSans.ttf",
+      "bold": "DejaVuSans-Bold.ttf"
+    }
+  },
+  "formulas": [
+    {
+      "id": "F0",
+      "title": "inline embedding: E = mc^2 and an inline sum on the text baseline",
+      "baseline": 712,
+      "boxes": [
+        {
+          "id": "F0.01",
+          "kind": "row",
+          "label": "row",
+          "x": 65.46,
+          "baseline": 712,
+          "width": 39.31,
+          "height": 9.4,
+          "depth": 2.4,
+          "bounds": [
+            65.46,
+            709.6,
+            39.31,
+            11.8
+          ]
+        },
+        {
+          "id": "F0.02",
+          "kind": "text",
+          "label": "\"E\"",
+          "x": 65.46,
+          "baseline": 712.0,
+          "width": 6.31,
+          "height": 7.59,
+          "depth": 2.4,
+          "bounds": [
+            65.46,
+            709.6,
+            6.31,
+            9.99
+          ]
+        },
+        {
+          "id": "F0.03",
+          "kind": "text",
+          "label": "\"=\"",
+          "x": 73.99,
+          "baseline": 712.0,
+          "width": 8.37,
+          "height": 7.59,
+          "depth": 2.4,
+          "bounds": [
+            73.99,
+            709.6,
+            8.37,
+            9.99
+          ]
+        },
+        {
+          "id": "F0.04",
+          "kind": "text",
+          "label": "\"m\"",
+          "x": 84.58,
+          "baseline": 712.0,
+          "width": 9.74,
+          "height": 7.59,
+          "depth": 2.4,
+          "bounds": [
+            84.58,
+            709.6,
+            9.74,
+            9.99
+          ]
+        },
+        {
+          "id": "F0.05",
+          "kind": "scripts",
+          "label": "scripts",
+          "x": 94.32,
+          "baseline": 712.0,
+          "width": 10.44,
+          "height": 9.4,
+          "depth": 2.4,
+          "bounds": [
+            94.32,
+            709.6,
+            10.44,
+            11.8
+          ]
+        },
+        {
+          "id": "F0.06",
+          "kind": "text",
+          "label": "\"c\"",
+          "x": 94.32,
+          "baseline": 712.0,
+          "width": 5.49,
+          "height": 7.59,
+          "depth": 2.4,
+          "bounds": [
+            94.32,
+            709.6,
+            5.49,
+            9.99
+          ]
+        },
+        {
+          "id": "F0.07",
+          "kind": "text",
+          "label": "\"2\"",
+          "x": 100.31,
+          "baseline": 716.09,
+          "width": 4.45,
+          "height": 5.31,
+          "depth": 1.68,
+          "bounds": [
+            100.31,
+            714.41,
+            4.45,
+            6.99
+          ]
+        },
+        {
+          "id": "F0.08",
+          "kind": "row",
+          "label": "row",
+          "x": 127.01,
+          "baseline": 712,
+          "width": 22.25,
+          "height": 9.61,
+          "depth": 6.18,
+          "bounds": [
+            127.01,
+            705.82,
+            22.25,
+            15.79
+          ]
+        },
+        {
+          "id": "F0.09",
+          "kind": "scripts",
+          "label": "scripts",
+          "x": 127.01,
+          "baseline": 712.0,
+          "width": 19.48,
+          "height": 9.61,
+          "depth": 6.18,
+          "bounds": [
+            127.01,
+            705.82,
+            19.48,
+            15.79
+          ]
+        },
+        {
+          "id": "F0.10",
+          "kind": "text",
+          "label": "\"∑\"",
+          "x": 127.01,
+          "baseline": 712.0,
+          "width": 6.73,
+          "height": 7.59,
+          "depth": 2.4,
+          "bounds": [
+            127.01,
+            709.6,
+            6.73,
+            9.99
+          ]
+        },
+        {
+          "id": "F0.11",
+          "kind": "text",
+          "label": "\"n\"",
+          "x": 134.24,
+          "baseline": 716.29,
+          "width": 4.43,
+          "height": 5.31,
+          "depth": 1.68,
+          "bounds": [
+            134.24,
+            714.61,
+            4.43,
+            6.99
+          ]
+        },
+        {
+          "id": "F0.12",
+          "kind": "row",
+          "label": "row",
+          "x": 134.24,
+          "baseline": 707.5,
+          "width": 12.25,
+          "height": 5.31,
+          "depth": 1.68,
+          "bounds": [
+            134.24,
+            705.82,
+            12.25,
+            6.99
+          ]
+        },
+        {
+          "id": "F0.13",
+          "kind": "text",
+          "label": "\"i\"",
+          "x": 134.24,
+          "baseline": 707.5,
+          "width": 1.94,
+          "height": 5.31,
+          "depth": 1.68,
+          "bounds": [
+            134.24,
+            705.82,
+            1.94,
+            6.99
+          ]
+        },
+        {
+          "id": "F0.14",
+          "kind": "text",
+          "label": "\"=\"",
+          "x": 136.18,
+          "baseline": 707.5,
+          "width": 5.86,
+          "height": 5.31,
+          "depth": 1.68,
+          "bounds": [
+            136.18,
+            705.82,
+            5.86,
+            6.99
+          ]
+        },
+        {
+          "id": "F0.15",
+          "kind": "text",
+          "label": "\"1\"",
+          "x": 142.03,
+          "baseline": 707.5,
+          "width": 4.45,
+          "height": 5.31,
+          "depth": 1.68,
+          "bounds": [
+            142.03,
+            705.82,
+            4.45,
+            6.99
+          ]
+        },
+        {
+          "id": "F0.16",
+          "kind": "text",
+          "label": "\"i\"",
+          "x": 146.49,
+          "baseline": 712.0,
+          "width": 2.77,
+          "height": 7.59,
+          "depth": 2.4,
+          "bounds": [
+            146.49,
+            709.6,
+            2.77,
+            9.99
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F1",
+      "title": "quadratic formula (display, sqrt over full radicand)",
+      "baseline": 648,
+      "root": {
+        "id": "F1",
+        "kind": "row",
+        "label": "row",
+        "x": 250,
+        "baseline": 648,
+        "width": 142.0,
+        "height": 28.92,
+        "depth": 14.5,
+        "bounds": [
+          250,
+          633.5,
+          142.0,
+          43.43
+        ]
+      },
+      "boxes": [
+        {
+          "id": "F1.01",
+          "kind": "row",
+          "label": "row",
+          "x": 250,
+          "baseline": 648,
+          "width": 142.0,
+          "height": 28.92,
+          "depth": 14.5,
+          "bounds": [
+            250,
+            633.5,
+            142.0,
+            43.43
+          ]
+        },
+        {
+          "id": "F1.02",
+          "kind": "text",
+          "label": "\"x\"",
+          "x": 250.0,
+          "baseline": 648.0,
+          "width": 9.46,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            250.0,
+            644.16,
+            9.46,
+            15.98
+          ]
+        },
+        {
+          "id": "F1.03",
+          "kind": "text",
+          "label": "\"=\"",
+          "x": 263.01,
+          "baseline": 648.0,
+          "width": 13.39,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            263.01,
+            644.16,
+            13.39,
+            15.98
+          ]
+        },
+        {
+          "id": "F1.04",
+          "kind": "frac",
+          "label": "frac",
+          "x": 279.96,
+          "baseline": 648.0,
+          "width": 112.04,
+          "height": 28.92,
+          "depth": 14.5,
+          "bounds": [
+            279.96,
+            633.5,
+            112.04,
+            43.43
+          ]
+        },
+        {
+          "id": "F1.05",
+          "kind": "row",
+          "label": "row",
+          "x": 281.56,
+          "baseline": 659.16,
+          "width": 108.84,
+          "height": 17.76,
+          "depth": 4.64,
+          "bounds": [
+            281.56,
+            654.52,
+            108.84,
+            22.4
+          ]
+        },
+        {
+          "id": "F1.06",
+          "kind": "text",
+          "label": "\"−\"",
+          "x": 281.56,
+          "baseline": 659.16,
+          "width": 13.39,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            281.56,
+            655.32,
+            13.39,
+            15.98
+          ]
+        },
+        {
+          "id": "F1.07",
+          "kind": "text",
+          "label": "\"b\"",
+          "x": 294.95,
+          "baseline": 659.16,
+          "width": 10.14,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            294.95,
+            655.32,
+            10.14,
+            15.98
+          ]
+        },
+        {
+          "id": "F1.08",
+          "kind": "text",
+          "label": "\"±\"",
+          "x": 305.1,
+          "baseline": 659.16,
+          "width": 13.39,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            305.1,
+            655.32,
+            13.39,
+            15.98
+          ]
+        },
+        {
+          "id": "F1.09",
+          "kind": "sqrt",
+          "label": "sqrt",
+          "x": 318.49,
+          "baseline": 659.16,
+          "width": 71.91,
+          "height": 17.76,
+          "depth": 4.64,
+          "bounds": [
+            318.49,
+            654.52,
+            71.91,
+            22.4
+          ]
+        },
+        {
+          "id": "F1.10",
+          "kind": "row",
+          "label": "row",
+          "x": 328.57,
+          "baseline": 659.16,
+          "width": 59.91,
+          "height": 15.04,
+          "depth": 3.84,
+          "bounds": [
+            328.57,
+            655.32,
+            59.91,
+            18.88
+          ]
+        },
+        {
+          "id": "F1.11",
+          "kind": "scripts",
+          "label": "scripts",
+          "x": 328.57,
+          "baseline": 659.16,
+          "width": 17.77,
+          "height": 15.04,
+          "depth": 3.84,
+          "bounds": [
+            328.57,
+            655.32,
+            17.77,
+            18.88
+          ]
+        },
+        {
+          "id": "F1.12",
+          "kind": "text",
+          "label": "\"b\"",
+          "x": 328.57,
+          "baseline": 659.16,
+          "width": 10.14,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            328.57,
+            655.32,
+            10.14,
+            15.98
+          ]
+        },
+        {
+          "id": "F1.13",
+          "kind": "text",
+          "label": "\"2\"",
+          "x": 339.21,
+          "baseline": 665.7,
+          "width": 7.12,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            339.21,
+            663.02,
+            7.12,
+            11.19
+          ]
+        },
+        {
+          "id": "F1.14",
+          "kind": "text",
+          "label": "\"−\"",
+          "x": 346.33,
+          "baseline": 659.16,
+          "width": 13.39,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            346.33,
+            655.32,
+            13.39,
+            15.98
+          ]
+        },
+        {
+          "id": "F1.15",
+          "kind": "text",
+          "label": "\"4\"",
+          "x": 359.73,
+          "baseline": 659.16,
+          "width": 10.18,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            359.73,
+            655.32,
+            10.18,
+            15.98
+          ]
+        },
+        {
+          "id": "F1.16",
+          "kind": "text",
+          "label": "\"a\"",
+          "x": 369.9,
+          "baseline": 659.16,
+          "width": 9.79,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            369.9,
+            655.32,
+            9.79,
+            15.98
+          ]
+        },
+        {
+          "id": "F1.17",
+          "kind": "text",
+          "label": "\"c\"",
+          "x": 379.69,
+          "baseline": 659.16,
+          "width": 8.78,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            379.69,
+            655.32,
+            8.78,
+            15.98
+          ]
+        },
+        {
+          "id": "F1.18",
+          "kind": "row",
+          "label": "row",
+          "x": 325.99,
+          "baseline": 637.34,
+          "width": 19.97,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            325.99,
+            633.5,
+            19.97,
+            15.98
+          ]
+        },
+        {
+          "id": "F1.19",
+          "kind": "text",
+          "label": "\"2\"",
+          "x": 325.99,
+          "baseline": 637.34,
+          "width": 10.18,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            325.99,
+            633.5,
+            10.18,
+            15.98
+          ]
+        },
+        {
+          "id": "F1.20",
+          "kind": "text",
+          "label": "\"a\"",
+          "x": 336.17,
+          "baseline": 637.34,
+          "width": 9.79,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            336.17,
+            633.5,
+            9.79,
+            15.98
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F2",
+      "title": "continued fraction (nested fracs never cross the rules)",
+      "baseline": 528,
+      "root": {
+        "id": "F2",
+        "kind": "frac",
+        "label": "frac",
+        "x": 250,
+        "baseline": 528,
+        "width": 72.33,
+        "height": 22.5,
+        "depth": 30.59,
+        "bounds": [
+          250,
+          497.41,
+          72.33,
+          53.09
+        ]
+      },
+      "boxes": [
+        {
+          "id": "F2.01",
+          "kind": "frac",
+          "label": "frac",
+          "x": 250,
+          "baseline": 528,
+          "width": 72.33,
+          "height": 22.5,
+          "depth": 30.59,
+          "bounds": [
+            250,
+            497.41,
+            72.33,
+            53.09
+          ]
+        },
+        {
+          "id": "F2.02",
+          "kind": "text",
+          "label": "\"1\"",
+          "x": 281.08,
+          "baseline": 538.36,
+          "width": 10.18,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            281.08,
+            534.52,
+            10.18,
+            15.98
+          ]
+        },
+        {
+          "id": "F2.03",
+          "kind": "row",
+          "label": "row",
+          "x": 251.6,
+          "baseline": 512.85,
+          "width": 69.13,
+          "height": 16.63,
+          "depth": 15.44,
+          "bounds": [
+            251.6,
+            497.41,
+            69.13,
+            32.07
+          ]
+        },
+        {
+          "id": "F2.04",
+          "kind": "text",
+          "label": "\"1\"",
+          "x": 251.6,
+          "baseline": 512.85,
+          "width": 10.18,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            251.6,
+            509.01,
+            10.18,
+            15.98
+          ]
+        },
+        {
+          "id": "F2.05",
+          "kind": "text",
+          "label": "\"+\"",
+          "x": 265.33,
+          "baseline": 512.85,
+          "width": 13.39,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            265.33,
+            509.01,
+            13.39,
+            15.98
+          ]
+        },
+        {
+          "id": "F2.06",
+          "kind": "frac",
+          "label": "frac",
+          "x": 282.28,
+          "baseline": 512.85,
+          "width": 38.45,
+          "height": 16.63,
+          "depth": 15.44,
+          "bounds": [
+            282.28,
+            497.41,
+            38.45,
+            32.07
+          ]
+        },
+        {
+          "id": "F2.07",
+          "kind": "text",
+          "label": "\"1\"",
+          "x": 297.94,
+          "baseline": 520.98,
+          "width": 7.12,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            297.94,
+            518.29,
+            7.12,
+            11.19
+          ]
+        },
+        {
+          "id": "F2.08",
+          "kind": "row",
+          "label": "row",
+          "x": 283.88,
+          "baseline": 503.61,
+          "width": 35.25,
+          "height": 11.8,
+          "depth": 6.2,
+          "bounds": [
+            283.88,
+            497.41,
+            35.25,
+            18.0
+          ]
+        },
+        {
+          "id": "F2.09",
+          "kind": "text",
+          "label": "\"1\"",
+          "x": 283.88,
+          "baseline": 503.61,
+          "width": 7.12,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            283.88,
+            500.92,
+            7.12,
+            11.19
+          ]
+        },
+        {
+          "id": "F2.10",
+          "kind": "text",
+          "label": "\"+\"",
+          "x": 291.0,
+          "baseline": 503.61,
+          "width": 9.37,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            291.0,
+            500.92,
+            9.37,
+            11.19
+          ]
+        },
+        {
+          "id": "F2.11",
+          "kind": "frac",
+          "label": "frac",
+          "x": 300.38,
+          "baseline": 503.61,
+          "width": 18.75,
+          "height": 11.8,
+          "depth": 6.2,
+          "bounds": [
+            300.38,
+            497.41,
+            18.75,
+            18.0
+          ]
+        },
+        {
+          "id": "F2.12",
+          "kind": "text",
+          "label": "\"1\"",
+          "x": 307.21,
+          "baseline": 509.34,
+          "width": 5.09,
+          "height": 6.07,
+          "depth": 1.92,
+          "bounds": [
+            307.21,
+            507.42,
+            5.09,
+            7.99
+          ]
+        },
+        {
+          "id": "F2.13",
+          "kind": "row",
+          "label": "row",
+          "x": 301.5,
+          "baseline": 499.33,
+          "width": 16.51,
+          "height": 6.07,
+          "depth": 1.92,
+          "bounds": [
+            301.5,
+            497.41,
+            16.51,
+            7.99
+          ]
+        },
+        {
+          "id": "F2.14",
+          "kind": "text",
+          "label": "\"1\"",
+          "x": 301.5,
+          "baseline": 499.33,
+          "width": 5.09,
+          "height": 6.07,
+          "depth": 1.92,
+          "bounds": [
+            301.5,
+            497.41,
+            5.09,
+            7.99
+          ]
+        },
+        {
+          "id": "F2.15",
+          "kind": "text",
+          "label": "\"+\"",
+          "x": 306.58,
+          "baseline": 499.33,
+          "width": 6.7,
+          "height": 6.07,
+          "depth": 1.92,
+          "bounds": [
+            306.58,
+            497.41,
+            6.7,
+            7.99
+          ]
+        },
+        {
+          "id": "F2.16",
+          "kind": "text",
+          "label": "\"x\"",
+          "x": 313.28,
+          "baseline": 499.33,
+          "width": 4.73,
+          "height": 6.07,
+          "depth": 1.92,
+          "bounds": [
+            313.28,
+            497.41,
+            4.73,
+            7.99
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F3",
+      "title": "sum with limits above/below (display big operator)",
+      "baseline": 408,
+      "root": {
+        "id": "F3",
+        "kind": "row",
+        "label": "row",
+        "x": 250,
+        "baseline": 408,
+        "width": 186.5,
+        "height": 33.02,
+        "depth": 19.73,
+        "bounds": [
+          250,
+          388.27,
+          186.5,
+          52.75
+        ]
+      },
+      "boxes": [
+        {
+          "id": "F3.01",
+          "kind": "row",
+          "label": "row",
+          "x": 250,
+          "baseline": 408,
+          "width": 186.5,
+          "height": 33.02,
+          "depth": 19.73,
+          "bounds": [
+            250,
+            388.27,
+            186.5,
+            52.75
+          ]
+        },
+        {
+          "id": "F3.02",
+          "kind": "bigop",
+          "label": "bigop",
+          "x": 250.0,
+          "baseline": 408.0,
+          "width": 21.2,
+          "height": 33.02,
+          "depth": 19.73,
+          "bounds": [
+            250.0,
+            388.27,
+            21.2,
+            52.75
+          ]
+        },
+        {
+          "id": "F3.03",
+          "kind": "text",
+          "label": "\"∑\"",
+          "x": 251.99,
+          "baseline": 408.0,
+          "width": 17.23,
+          "height": 19.43,
+          "depth": 6.14,
+          "bounds": [
+            251.99,
+            401.86,
+            17.23,
+            25.57
+          ]
+        },
+        {
+          "id": "F3.04",
+          "kind": "text",
+          "label": "\"n\"",
+          "x": 257.06,
+          "baseline": 432.52,
+          "width": 7.09,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            257.06,
+            429.83,
+            7.09,
+            11.19
+          ]
+        },
+        {
+          "id": "F3.05",
+          "kind": "row",
+          "label": "row",
+          "x": 250.8,
+          "baseline": 390.96,
+          "width": 19.6,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            250.8,
+            388.27,
+            19.6,
+            11.19
+          ]
+        },
+        {
+          "id": "F3.06",
+          "kind": "text",
+          "label": "\"i\"",
+          "x": 250.8,
+          "baseline": 390.96,
+          "width": 3.1,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            250.8,
+            388.27,
+            3.1,
+            11.19
+          ]
+        },
+        {
+          "id": "F3.07",
+          "kind": "text",
+          "label": "\"=\"",
+          "x": 253.9,
+          "baseline": 390.96,
+          "width": 9.37,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            253.9,
+            388.27,
+            9.37,
+            11.19
+          ]
+        },
+        {
+          "id": "F3.08",
+          "kind": "text",
+          "label": "\"1\"",
+          "x": 263.28,
+          "baseline": 390.96,
+          "width": 7.12,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            263.28,
+            388.27,
+            7.12,
+            11.19
+          ]
+        },
+        {
+          "id": "F3.09",
+          "kind": "scripts",
+          "label": "scripts",
+          "x": 273.87,
+          "baseline": 408.0,
+          "width": 12.06,
+          "height": 15.04,
+          "depth": 3.84,
+          "bounds": [
+            273.87,
+            404.16,
+            12.06,
+            18.88
+          ]
+        },
+        {
+          "id": "F3.10",
+          "kind": "text",
+          "label": "\"i\"",
+          "x": 273.87,
+          "baseline": 408.0,
+          "width": 4.43,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            273.87,
+            404.16,
+            4.43,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.11",
+          "kind": "text",
+          "label": "\"2\"",
+          "x": 278.8,
+          "baseline": 414.54,
+          "width": 7.12,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            278.8,
+            411.86,
+            7.12,
+            11.19
+          ]
+        },
+        {
+          "id": "F3.12",
+          "kind": "text",
+          "label": "\"=\"",
+          "x": 289.48,
+          "baseline": 408.0,
+          "width": 13.39,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            289.48,
+            404.16,
+            13.39,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.13",
+          "kind": "frac",
+          "label": "frac",
+          "x": 306.42,
+          "baseline": 408.0,
+          "width": 130.08,
+          "height": 22.5,
+          "depth": 14.5,
+          "bounds": [
+            306.42,
+            393.5,
+            130.08,
+            37.01
+          ]
+        },
+        {
+          "id": "F3.14",
+          "kind": "row",
+          "label": "row",
+          "x": 308.02,
+          "baseline": 418.36,
+          "width": 126.88,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            308.02,
+            414.52,
+            126.88,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.15",
+          "kind": "text",
+          "label": "\"n\"",
+          "x": 308.02,
+          "baseline": 418.36,
+          "width": 10.13,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            308.02,
+            414.52,
+            10.13,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.16",
+          "kind": "text",
+          "label": "\"(\"",
+          "x": 318.15,
+          "baseline": 418.36,
+          "width": 6.24,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            318.15,
+            414.52,
+            6.24,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.17",
+          "kind": "text",
+          "label": "\"n\"",
+          "x": 324.39,
+          "baseline": 418.36,
+          "width": 10.13,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            324.39,
+            414.52,
+            10.13,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.18",
+          "kind": "text",
+          "label": "\"+\"",
+          "x": 338.08,
+          "baseline": 418.36,
+          "width": 13.39,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            338.08,
+            414.52,
+            13.39,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.19",
+          "kind": "text",
+          "label": "\"1\"",
+          "x": 355.02,
+          "baseline": 418.36,
+          "width": 10.18,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            355.02,
+            414.52,
+            10.18,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.20",
+          "kind": "text",
+          "label": "\")\"",
+          "x": 365.2,
+          "baseline": 418.36,
+          "width": 6.24,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            365.2,
+            414.52,
+            6.24,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.21",
+          "kind": "text",
+          "label": "\"(\"",
+          "x": 371.44,
+          "baseline": 418.36,
+          "width": 6.24,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            371.44,
+            414.52,
+            6.24,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.22",
+          "kind": "text",
+          "label": "\"2\"",
+          "x": 377.68,
+          "baseline": 418.36,
+          "width": 10.18,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            377.68,
+            414.52,
+            10.18,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.23",
+          "kind": "text",
+          "label": "\"n\"",
+          "x": 387.86,
+          "baseline": 418.36,
+          "width": 10.13,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            387.86,
+            414.52,
+            10.13,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.24",
+          "kind": "text",
+          "label": "\"+\"",
+          "x": 401.54,
+          "baseline": 418.36,
+          "width": 13.39,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            401.54,
+            414.52,
+            13.39,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.25",
+          "kind": "text",
+          "label": "\"1\"",
+          "x": 418.49,
+          "baseline": 418.36,
+          "width": 10.18,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            418.49,
+            414.52,
+            10.18,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.26",
+          "kind": "text",
+          "label": "\")\"",
+          "x": 428.66,
+          "baseline": 418.36,
+          "width": 6.24,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            428.66,
+            414.52,
+            6.24,
+            15.98
+          ]
+        },
+        {
+          "id": "F3.27",
+          "kind": "text",
+          "label": "\"6\"",
+          "x": 366.38,
+          "baseline": 397.34,
+          "width": 10.18,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            366.38,
+            393.5,
+            10.18,
+            15.98
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F4",
+      "title": "integral with limits, scripts and nested sqrt/frac",
+      "baseline": 296,
+      "root": {
+        "id": "F4",
+        "kind": "row",
+        "label": "row",
+        "x": 250,
+        "baseline": 296,
+        "width": 114.44,
+        "height": 33.02,
+        "depth": 19.73,
+        "bounds": [
+          250,
+          276.27,
+          114.44,
+          52.75
+        ]
+      },
+      "boxes": [
+        {
+          "id": "F4.01",
+          "kind": "row",
+          "label": "row",
+          "x": 250,
+          "baseline": 296,
+          "width": 114.44,
+          "height": 33.02,
+          "depth": 19.73,
+          "bounds": [
+            250,
+            276.27,
+            114.44,
+            52.75
+          ]
+        },
+        {
+          "id": "F4.02",
+          "kind": "bigop",
+          "label": "bigop",
+          "x": 250.0,
+          "baseline": 296.0,
+          "width": 14.91,
+          "height": 33.02,
+          "depth": 19.73,
+          "bounds": [
+            250.0,
+            276.27,
+            14.91,
+            52.75
+          ]
+        },
+        {
+          "id": "F4.03",
+          "kind": "text",
+          "label": "\"∫\"",
+          "x": 250.8,
+          "baseline": 296.0,
+          "width": 13.31,
+          "height": 19.43,
+          "depth": 6.14,
+          "bounds": [
+            250.8,
+            289.86,
+            13.31,
+            25.57
+          ]
+        },
+        {
+          "id": "F4.04",
+          "kind": "text",
+          "label": "\"∞\"",
+          "x": 252.79,
+          "baseline": 320.52,
+          "width": 9.33,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            252.79,
+            317.83,
+            9.33,
+            11.19
+          ]
+        },
+        {
+          "id": "F4.05",
+          "kind": "text",
+          "label": "\"0\"",
+          "x": 253.89,
+          "baseline": 278.96,
+          "width": 7.12,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            253.89,
+            276.27,
+            7.12,
+            11.19
+          ]
+        },
+        {
+          "id": "F4.06",
+          "kind": "scripts",
+          "label": "scripts",
+          "x": 267.58,
+          "baseline": 296.0,
+          "width": 31.92,
+          "height": 17.12,
+          "depth": 3.84,
+          "bounds": [
+            267.58,
+            292.16,
+            31.92,
+            20.96
+          ]
+        },
+        {
+          "id": "F4.07",
+          "kind": "text",
+          "label": "\"e\"",
+          "x": 267.58,
+          "baseline": 296.0,
+          "width": 9.84,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            267.58,
+            292.16,
+            9.84,
+            15.98
+          ]
+        },
+        {
+          "id": "F4.08",
+          "kind": "row",
+          "label": "row",
+          "x": 277.92,
+          "baseline": 302.54,
+          "width": 21.58,
+          "height": 10.57,
+          "depth": 2.69,
+          "bounds": [
+            277.92,
+            299.86,
+            21.58,
+            13.26
+          ]
+        },
+        {
+          "id": "F4.09",
+          "kind": "text",
+          "label": "\"−\"",
+          "x": 277.92,
+          "baseline": 302.54,
+          "width": 9.37,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            277.92,
+            299.86,
+            9.37,
+            11.19
+          ]
+        },
+        {
+          "id": "F4.10",
+          "kind": "scripts",
+          "label": "scripts",
+          "x": 287.29,
+          "baseline": 302.54,
+          "width": 12.21,
+          "height": 10.57,
+          "depth": 2.69,
+          "bounds": [
+            287.29,
+            299.86,
+            12.21,
+            13.26
+          ]
+        },
+        {
+          "id": "F4.11",
+          "kind": "text",
+          "label": "\"x\"",
+          "x": 287.29,
+          "baseline": 302.54,
+          "width": 6.62,
+          "height": 8.5,
+          "depth": 2.69,
+          "bounds": [
+            287.29,
+            299.86,
+            6.62,
+            11.19
+          ]
+        },
+        {
+          "id": "F4.12",
+          "kind": "text",
+          "label": "\"2\"",
+          "x": 294.41,
+          "baseline": 307.04,
+          "width": 5.09,
+          "height": 6.07,
+          "depth": 1.92,
+          "bounds": [
+            294.41,
+            305.12,
+            5.09,
+            7.99
+          ]
+        },
+        {
+          "id": "F4.13",
+          "kind": "text",
+          "label": "\"d\"",
+          "x": 299.5,
+          "baseline": 296.0,
+          "width": 10.14,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            299.5,
+            292.16,
+            10.14,
+            15.98
+          ]
+        },
+        {
+          "id": "F4.14",
+          "kind": "text",
+          "label": "\"x\"",
+          "x": 309.64,
+          "baseline": 296.0,
+          "width": 9.46,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            309.64,
+            292.16,
+            9.46,
+            15.98
+          ]
+        },
+        {
+          "id": "F4.15",
+          "kind": "text",
+          "label": "\"=\"",
+          "x": 322.66,
+          "baseline": 296.0,
+          "width": 13.39,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            322.66,
+            292.16,
+            13.39,
+            15.98
+          ]
+        },
+        {
+          "id": "F4.16",
+          "kind": "frac",
+          "label": "frac",
+          "x": 339.6,
+          "baseline": 296.0,
+          "width": 24.83,
+          "height": 26.02,
+          "depth": 14.5,
+          "bounds": [
+            339.6,
+            281.5,
+            24.83,
+            40.53
+          ]
+        },
+        {
+          "id": "F4.17",
+          "kind": "sqrt",
+          "label": "sqrt",
+          "x": 341.2,
+          "baseline": 307.16,
+          "width": 21.63,
+          "height": 14.86,
+          "depth": 4.64,
+          "bounds": [
+            341.2,
+            302.52,
+            21.63,
+            19.5
+          ]
+        },
+        {
+          "id": "F4.18",
+          "kind": "text",
+          "label": "\"π\"",
+          "x": 351.28,
+          "baseline": 307.16,
+          "width": 9.63,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            351.28,
+            303.32,
+            9.63,
+            15.98
+          ]
+        },
+        {
+          "id": "F4.19",
+          "kind": "text",
+          "label": "\"2\"",
+          "x": 346.93,
+          "baseline": 285.34,
+          "width": 10.18,
+          "height": 12.14,
+          "depth": 3.84,
+          "bounds": [
+            346.93,
+            281.5,
+            10.18,
+            15.98
+          ]
+        }
+      ]
+    }
+  ]
+}

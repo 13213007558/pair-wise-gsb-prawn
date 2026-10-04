@@ -246,7 +246,7 @@ module Prawn
 
     # This constant is used to approximate a symmetrical arc using a cubic
     # Bezier curve.
-    KAPPA = 4.0 * ((Math.sqrt(2) - 1.0) / 3.0)
+    KAPPA = 4.0 * ((::Math.sqrt(2) - 1.0) / 3.0)
 
     # Draws a circle of radius `radius` with the centre-point at
     # `point` as a complete subpath. The drawing point will be moved to
@@ -774,14 +774,14 @@ module Prawn
     end
 
     def degree_to_rad(angle)
-      angle * Math::PI / 180
+      angle * ::Math::PI / 180
     end
 
     # Returns the coordinates for a point on a line that is a given distance
     # away from the second point defining the line segement
     def point_on_line(distance_from_end, *points)
       x0, y0, x1, y1 = points.flatten
-      length = Math.sqrt(((x1 - x0)**2) + ((y1 - y0)**2))
+      length = ::Math.sqrt(((x1 - x0)**2) + ((y1 - y0)**2))
       p = (length - distance_from_end) / length
       xr = x0 + (p * (x1 - x0))
       yr = y0 + (p * (y1 - y0))

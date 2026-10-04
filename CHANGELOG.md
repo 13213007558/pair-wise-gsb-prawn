@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Declarative math typesetting (Prawn::Math)
+
+A small math typesetter lays out expression trees (rows, fractions,
+radicals, sub/superscripts, big operators with limits) into boxes with
+width/height/depth that render on a baseline, inline with ordinary text
+or standalone. Uses DejaVu Sans (regular/bold) and a documented symbol
+set; radicals are vector-drawn so they always cover the radicand.
+See `examples/math_report.rb` for a one-page demo with per-box metrics.
+
 ## PrawnPDF 2.5.0
 
 ### Full font embedding

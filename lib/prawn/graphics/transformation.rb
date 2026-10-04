@@ -36,8 +36,8 @@ module Prawn
       def rotate(angle, options = {}, &block)
         Prawn.verify_options(:origin, options)
         rad = degree_to_rad(angle)
-        cos = Math.cos(rad)
-        sin = Math.sin(rad)
+        cos = ::Math.cos(rad)
+        sin = ::Math.sin(rad)
         if options[:origin].nil?
           transformation_matrix(cos, sin, -sin, cos, 0, 0, &block)
         else
