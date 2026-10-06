@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Added spot color support
+
+Spot colors can now be kept as independent channels in the generated PDF
+for print production. Declaring a spot color with a single colorant name
+creates a /Separation color space, declaring it with multiple names creates
+a /DeviceN color space. Both require an alternate color and accept an
+explicit tint transform (a Type 2 exponential interpolation function or
+a Type 4 PostScript calculator function).
+
+```ruby
+pantone_red = pdf.declare_spot_color(
+  'PANTONE 185 C',
+  alternate: [0, 100, 93, 0],
+)
+pdf.fill_spot_color(pantone_red, 0.75)
+```
+
 ## PrawnPDF 2.5.0
 
 ### Full font embedding

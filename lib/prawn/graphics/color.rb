@@ -120,6 +120,8 @@ module Prawn
 
       def color_type(color)
         case color
+        when SpotColor::SpotColorValue
+          :Spot
         when String
           if /\A\h{6}\z/.match?(color)
             :RGB
@@ -140,6 +142,8 @@ module Prawn
 
       def normalize_color(color)
         case color_type(color)
+        when :Spot
+          color.tints
         when :RGB
           r, g, b = hex2rgb(color)
           [r / 255.0, g / 255.0, b / 255.0]
@@ -155,6 +159,8 @@ module Prawn
 
       def color_space(color)
         case color_type(color)
+        when :Spot
+          color.color_space.resource_name
         when :RGB
           :DeviceRGB
         when :CMYK
@@ -173,7 +179,7 @@ module Prawn
 
         set_current_color_space(color_space, type)
 
-        unless COLOR_SPACES.include?(color_space)
+        unless COLOR_SPACES.include?(color_space) || spot_color_space?(color_space)
           raise ArgumentError, "unknown color space: '#{color_space}'"
         end
 
@@ -206,6 +212,7 @@ module Prawn
           renderer.add_content("/#{color} #{operator}")
         else
           set_color_space(type, color_space(color))
+          register_spot_color_space(color) if color.is_a?(SpotColor::SpotColorValue)
           color = color_to_s(color)
           write_color(color, operator)
         end
