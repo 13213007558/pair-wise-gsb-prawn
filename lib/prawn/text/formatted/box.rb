@@ -20,6 +20,51 @@ module Prawn
       class Box
         include Prawn::Text::Formatted::Wrap
 
+        # Valid values for the `:fallback_mode` option.
+        #
+        # * `:codepoint` --- select a font for each character individually
+        #   (the historical behavior).
+        # * `:grapheme` --- select a font for each grapheme cluster so that
+        #   the whole cluster is rendered with a single font.
+        #
+        # @return [Array<Symbol>]
+        FALLBACK_MODES = %i[codepoint grapheme].freeze
+
+        # Control characters. They are never drawn so they don't require
+        # glyph coverage when a font is selected for a grapheme cluster.
+        #
+        # @private
+        CONTROL_CODEPOINT_RANGES = [
+          0x0000..0x001F, # C0 controls
+          0x007F..0x009F, # C1 controls
+        ].freeze
+
+        # Unicode Default_Ignorable_Code_Point ranges (zero-width joiners,
+        # variation selectors, and similar). They don't require glyph coverage
+        # when a font is selected for a grapheme cluster. They are kept
+        # attached to their cluster and rendered with the cluster's font.
+        #
+        # @private
+        DEFAULT_IGNORABLE_CODEPOINT_RANGES = [
+          0x00AD..0x00AD, # soft hyphen
+          0x034F..0x034F, # combining grapheme joiner
+          0x061C..0x061C, # arabic letter mark
+          0x115F..0x1160, # hangul choseong/jungseong filler
+          0x17B4..0x17B5, # khmer vowel inherent
+          0x180B..0x180F, # mongolian free variation selectors, MVS
+          0x200B..0x200F, # ZWSP, ZWNJ, ZWJ, LRM, RLM
+          0x202A..0x202E, # bidi embedding/override controls
+          0x2060..0x206F, # word joiner, invisible operators
+          0x3164..0x3164, # hangul filler
+          0xFE00..0xFE0F, # variation selectors 1-16
+          0xFEFF..0xFEFF, # zero width no-break space (BOM)
+          0xFFA0..0xFFA0, # halfwidth hangul filler
+          0xFFF0..0xFFF8, # unassigned default-ignorables
+          0x1BCA0..0x1BCA3, # shorthand format controls
+          0x1D173..0x1D17A, # musical format controls
+          0xE0000..0xE0FFF, # tags and variation selectors supplement
+        ].freeze
+
         # @group Experimental API
 
         # The text that was successfully printed (or, if `:dry_run` was
@@ -69,6 +114,19 @@ module Prawn
         def line_gap
           line_height - (ascender + descender)
         end
+
+        # Grapheme clusters that could not be fully covered by any of the
+        # candidate fonts during the last render when using
+        # <tt>fallback_mode: :grapheme</tt>.
+        #
+        # Each entry is a Hash with:
+        #
+        # - +:text+ --- the uncovered grapheme cluster.
+        # - +:position+ --- the character offset of the cluster in the
+        #   original text of the box.
+        #
+        # @return [Array<Hash{Symbol => any}>]
+        attr_reader :uncovered_clusters
 
         # See Prawn::Text#text_box for valid options
         #
@@ -147,6 +205,21 @@ module Prawn
         #   {Prawn::Document#font_families}). If present, then each glyph will
         #   be rendered using the first font that includes the glyph, starting
         #   with the current font and then moving through `:fallback_fonts`.
+        # @option options :fallback_mode [:codepoint, :grapheme] (:codepoint)
+        #   Controls how fallback fonts are selected.
+        #
+        #   * `:codepoint` --- each character is individually assigned the
+        #     first font that contains a glyph for it. This can split a grapheme
+        #     cluster (e.g. a base letter and its combining marks) across
+        #     different fonts.
+        #   * `:grapheme` --- text is segmented into grapheme clusters and each
+        #     cluster is assigned the first font (starting with the current font
+        #     and then moving through `:fallback_fonts`) that contains glyphs
+        #     for the whole cluster. Default-ignorable characters such as
+        #     zero-width joiners and variation selectors are kept attached to
+        #     their cluster and don't influence font selection on their own.
+        #     Clusters that no candidate font can fully cover are rendered with
+        #     the fragment font and reported in {#uncovered_clusters}.
         # @option options :align [:left, :center, :right, :justify]
         #   (:left if direction is :ltr, :right if direction is :rtl)
         #   Alignment within the bounding box.
@@ -187,6 +260,12 @@ module Prawn
           @direction = options[:direction] || @document.text_direction
           @fallback_fonts = options[:fallback_fonts] ||
             @document.fallback_fonts
+          @fallback_mode = options[:fallback_mode] || :codepoint
+          unless FALLBACK_MODES.include?(@fallback_mode)
+            raise ArgumentError,
+              "fallback_mode must be one of: #{FALLBACK_MODES.join(', ')}"
+          end
+          @uncovered_clusters = []
           @at = (
             options[:at] || [@document.bounds.left, @document.bounds.top]
           ).dup
@@ -412,6 +491,7 @@ module Prawn
             document
             direction
             fallback_fonts
+            fallback_mode
             draw_text_callback
           ]
         end
@@ -437,6 +517,8 @@ module Prawn
         def normalize_encoding
           formatted_text = original_text
 
+          @uncovered_clusters = []
+
           unless @fallback_fonts.empty?
             formatted_text = process_fallback_fonts(formatted_text)
           end
@@ -456,16 +538,18 @@ module Prawn
 
         def process_fallback_fonts(formatted_text)
           modified_formatted_text = []
+          text_position = 0
 
           formatted_text.each do |hash|
-            fragments = analyze_glyphs_for_fallback_font_support(hash)
+            fragments = analyze_glyphs_for_fallback_font_support(hash, text_position)
             modified_formatted_text.concat(fragments)
+            text_position += hash[:text].length
           end
 
           modified_formatted_text
         end
 
-        def analyze_glyphs_for_fallback_font_support(hash)
+        def analyze_glyphs_for_fallback_font_support(hash, text_position = 0)
           font_glyph_pairs = []
 
           original_font = @document.font.family
@@ -479,16 +563,41 @@ module Prawn
           fallback_fonts << fragment_font
 
           @document.save_font do
-            hash[:text].each_char do |char|
-              font_glyph_pairs << [
-                find_font_for_this_glyph(
-                  char,
-                  fragment_font,
-                  fallback_fonts.dup,
+            if @fallback_mode == :grapheme
+              cluster_position = text_position
+
+              hash[:text].grapheme_clusters.each do |cluster|
+                font = find_font_for_this_cluster(
+                  cluster,
+                  [fragment_font, *@fallback_fonts],
                   fragment_font_options,
-                ),
-                char,
-              ]
+                )
+
+                if font.nil?
+                  @uncovered_clusters << {
+                    text: cluster,
+                    position: cluster_position,
+                  }
+                  # always default back to the fragment font if no font covers
+                  # the whole cluster
+                  font = fragment_font
+                end
+
+                font_glyph_pairs << [font, cluster]
+                cluster_position += cluster.length
+              end
+            else
+              hash[:text].each_char do |char|
+                font_glyph_pairs << [
+                  find_font_for_this_glyph(
+                    char,
+                    fragment_font,
+                    fallback_fonts.dup,
+                    fragment_font_options,
+                  ),
+                  char,
+                ]
+              end
             end
           end
 
@@ -523,6 +632,70 @@ module Prawn
           else
             find_font_for_this_glyph(char, fallback_fonts.shift, fallback_fonts, current_font_options)
           end
+        end
+
+        # Find the first font, in the given order, that contains glyphs for
+        # the whole grapheme cluster. Returns +nil+ if no font covers the
+        # cluster.
+        #
+        # @param cluster [String]
+        # @param fonts [Array<String>]
+        # @param font_options [Hash]
+        # @return [String, nil]
+        def find_font_for_this_cluster(cluster, fonts, font_options = {})
+          # Prefer a font that has glyphs for every code point of the
+          # cluster, including default-ignorable ones such as zero-width
+          # joiners and variation selectors, so that the whole cluster can
+          # be encoded with a single font.
+          [true, false].each do |include_default_ignorable|
+            fonts.each do |font_name|
+              @document.font(font_name, font_options)
+              covered = cluster_covered_by_current_font?(
+                cluster,
+                include_default_ignorable: include_default_ignorable,
+              )
+              return font_name if covered
+            end
+          end
+
+          nil
+        end
+
+        # Does the current font contain glyphs for all code points of the
+        # cluster that require glyph coverage?
+        #
+        # @param cluster [String]
+        # @param include_default_ignorable [Boolean] (false)
+        #   Whether to also require glyphs for default-ignorable code
+        #   points such as zero-width joiners and variation selectors.
+        # @return [Boolean]
+        def cluster_covered_by_current_font?(cluster, include_default_ignorable: false)
+          cluster.codepoints.all? do |codepoint|
+            next true if control_codepoint?(codepoint)
+
+            unless include_default_ignorable
+              next true if default_ignorable_codepoint?(codepoint)
+            end
+
+            @document.font.glyph_present?(codepoint.chr(::Encoding::UTF_8))
+          end
+        end
+
+        # Is this code point a control character?
+        #
+        # @param codepoint [Integer]
+        # @return [Boolean]
+        def control_codepoint?(codepoint)
+          CONTROL_CODEPOINT_RANGES.any? { |range| range.cover?(codepoint) }
+        end
+
+        # Is this code point default-ignorable (zero-width joiner, variation
+        # selector, or similar)?
+        #
+        # @param codepoint [Integer]
+        # @return [Boolean]
+        def default_ignorable_codepoint?(codepoint)
+          DEFAULT_IGNORABLE_CODEPOINT_RANGES.any? { |range| range.cover?(codepoint) }
         end
 
         def form_fragments_from_like_font_glyph_pairs(font_glyph_pairs, hash)

@@ -55,6 +55,14 @@ module Prawn
     #   {Prawn::Document#font_families}). If present, then each glyph will be
     #   rendered using the first font that includes the glyph, starting with the
     #   current font and then moving through `:fallback_fonts`.
+    # @option options :fallback_mode [:codepoint, :grapheme] (:codepoint)
+    #   Controls how fallback fonts are selected. With `:codepoint` (the
+    #   default), each character is individually assigned the first font
+    #   that contains a glyph for it. With `:grapheme`, text is segmented
+    #   into grapheme clusters and each cluster is rendered with the first
+    #   font that contains glyphs for the whole cluster, keeping combining
+    #   marks, zero-width joiners, and variation selectors together with
+    #   their base characters.
     # @option options :align [:left, :center, :right, :justify]
     #   (:left if direction is :ltr, :right if direction is :rtl)
     #   Alignment within the bounding box.
@@ -140,6 +148,14 @@ module Prawn
       #   {Prawn::Document#font_families}). If present, then each glyph will be
       #   rendered using the first font that includes the glyph, starting with the
       #   current font and then moving through `:fallback_fonts`.
+    # @option options :fallback_mode [:codepoint, :grapheme] (:codepoint)
+    #   Controls how fallback fonts are selected. With `:codepoint` (the
+    #   default), each character is individually assigned the first font
+    #   that contains a glyph for it. With `:grapheme`, text is segmented
+    #   into grapheme clusters and each cluster is rendered with the first
+    #   font that contains glyphs for the whole cluster, keeping combining
+    #   marks, zero-width joiners, and variation selectors together with
+    #   their base characters.
       # @option options :align [:left, :center, :right, :justify]
       #   (:left if direction is :ltr, :right if direction is :rtl)
       #   Alignment within the bounding box.

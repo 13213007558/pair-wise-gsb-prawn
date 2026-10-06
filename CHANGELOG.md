@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Grapheme-cluster fallback font selection
+
+Text methods now accept a `:fallback_mode` option. The default `:codepoint`
+mode keeps the historical behavior of selecting a fallback font for each
+character individually, which could split a grapheme cluster (such as a base
+letter and its combining marks) across different fonts. The new `:grapheme`
+mode segments text into grapheme clusters and renders each cluster with the
+first font (starting with the current font and then moving through
+`:fallback_fonts`) that covers the whole cluster. Zero-width joiners and
+variation selectors are kept attached to their cluster. Clusters that no
+candidate font can fully cover are rendered with the fragment font and
+reported in `Prawn::Text::Formatted::Box#uncovered_clusters`.
+
 ## PrawnPDF 2.5.0
 
 ### Full font embedding

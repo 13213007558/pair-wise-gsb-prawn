@@ -627,5 +627,21 @@ describe Prawn::Text do
         expect(text.strings[0]).to eq('hello')
       end
     end
+
+    describe 'fallback_mode' do
+      it 'selects fallback fonts per grapheme cluster when set to :grapheme' do
+        create_pdf
+        add_unicode_fonts(pdf)
+
+        pdf.text("cafe\u0301", fallback_mode: :grapheme)
+
+        text = PDF::Inspector::Text.analyze(pdf.render)
+        fonts_used = text.font_settings.map { |e| e[:name] }
+
+        expect(text.strings.join).to eq("cafe\u0301")
+        expect(text.strings[0]).to eq('caf')
+        expect(fonts_used[0]).to eq(:Helvetica)
+      end
+    end
   end
 end
