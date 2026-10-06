@@ -20,6 +20,12 @@ module Prawn
       class Box
         include Prawn::Text::Formatted::Wrap
 
+        # Pattern matching a single grapheme cluster (an extended grapheme
+        # cluster as defined in Unicode Standard Annex #29). Keeps combining
+        # marks, variation selectors, and ZWJ sequences attached to their
+        # base character.
+        GRAPHEME_CLUSTER_PATTERN = /\X/
+
         # @group Experimental API
 
         # The text that was successfully printed (or, if `:dry_run` was
@@ -58,6 +64,19 @@ module Prawn
         # The height of the descender of the last line printed.
         # @return [Number]
         attr_reader :descender
+
+        # Grapheme clusters that no available font could fully cover during
+        # the last render. This is only populated when the fallback fonts
+        # mode is `:grapheme_cluster`.
+        #
+        # Each entry is a Hash with:
+        #
+        # - `:index` --- the character offset of the start of the cluster in
+        #   the concatenation of all fragment texts of this box.
+        # - `:cluster` --- the uncovered grapheme cluster.
+        #
+        # @return [Array<Hash{Symbol => Object}>]
+        attr_reader :uncovered_clusters
 
         # The leading used during printing.
         # @return [Number]
@@ -147,6 +166,17 @@ module Prawn
         #   {Prawn::Document#font_families}). If present, then each glyph will
         #   be rendered using the first font that includes the glyph, starting
         #   with the current font and then moving through `:fallback_fonts`.
+        # @option options :fallback_fonts_mode [:codepoint, :grapheme_cluster]
+        #   (:codepoint)
+        #   How a fallback font is selected for text.
+        #
+        #   - `:codepoint` --- each character is considered individually. This
+        #     is the historic behavior.
+        #   - `:grapheme_cluster` --- text is segmented into grapheme clusters
+        #     (e.g. a base letter with its combining marks, or an emoji ZWJ
+        #     sequence) and the first font that covers the whole cluster is
+        #     used for it, keeping the cluster in a single font. Clusters that
+        #     no font fully covers are reported via {#uncovered_clusters}.
         # @option options :align [:left, :center, :right, :justify]
         #   (:left if direction is :ltr, :right if direction is :rtl)
         #   Alignment within the bounding box.
@@ -187,6 +217,13 @@ module Prawn
           @direction = options[:direction] || @document.text_direction
           @fallback_fonts = options[:fallback_fonts] ||
             @document.fallback_fonts
+          @fallback_fonts_mode = options[:fallback_fonts_mode] || :codepoint
+          unless %i[codepoint grapheme_cluster].include?(@fallback_fonts_mode)
+            raise ArgumentError,
+              'fallback_fonts_mode must be one of :codepoint or ' \
+                ":grapheme_cluster (#{@fallback_fonts_mode.inspect})"
+          end
+          @uncovered_clusters = []
           @at = (
             options[:at] || [@document.bounds.left, @document.bounds.top]
           ).dup
@@ -412,6 +449,7 @@ module Prawn
             document
             direction
             fallback_fonts
+            fallback_fonts_mode
             draw_text_callback
           ]
         end
@@ -437,7 +475,7 @@ module Prawn
         def normalize_encoding
           formatted_text = original_text
 
-          unless @fallback_fonts.empty?
+          if !@fallback_fonts.empty? || @fallback_fonts_mode == :grapheme_cluster
             formatted_text = process_fallback_fonts(formatted_text)
           end
 
@@ -456,16 +494,19 @@ module Prawn
 
         def process_fallback_fonts(formatted_text)
           modified_formatted_text = []
+          @uncovered_clusters = []
+          text_offset = 0
 
           formatted_text.each do |hash|
-            fragments = analyze_glyphs_for_fallback_font_support(hash)
+            fragments = analyze_glyphs_for_fallback_font_support(hash, text_offset)
+            text_offset += hash[:text].length
             modified_formatted_text.concat(fragments)
           end
 
           modified_formatted_text
         end
 
-        def analyze_glyphs_for_fallback_font_support(hash)
+        def analyze_glyphs_for_fallback_font_support(hash, text_offset = 0)
           font_glyph_pairs = []
 
           original_font = @document.font.family
@@ -474,21 +515,49 @@ module Prawn
             (fragment_font_style = font_style(hash[:styles])) == :normal ? {} : { style: fragment_font_style }
 
           fallback_fonts = @fallback_fonts.dup
-          # always default back to the current font if the glyph is missing from
-          # all fonts
-          fallback_fonts << fragment_font
 
           @document.save_font do
-            hash[:text].each_char do |char|
-              font_glyph_pairs << [
-                find_font_for_this_glyph(
-                  char,
+            if @fallback_fonts_mode == :grapheme_cluster
+              cluster_offset = text_offset
+
+              hash[:text].scan(GRAPHEME_CLUSTER_PATTERN).each do |cluster|
+                font = find_font_for_this_cluster(
+                  cluster,
                   fragment_font,
-                  fallback_fonts.dup,
+                  fallback_fonts,
                   fragment_font_options,
-                ),
-                char,
-              ]
+                )
+
+                if font.nil?
+                  @uncovered_clusters << { index: cluster_offset, cluster: cluster }
+                  font =
+                    find_font_encoding_this_cluster(
+                      cluster,
+                      fragment_font,
+                      fallback_fonts,
+                      fragment_font_options,
+                    ) || fragment_font
+                end
+
+                font_glyph_pairs << [font, cluster]
+                cluster_offset += cluster.length
+              end
+            else
+              # always default back to the current font if the glyph is missing
+              # from all fonts
+              fallback_fonts << fragment_font
+
+              hash[:text].each_char do |char|
+                font_glyph_pairs << [
+                  find_font_for_this_glyph(
+                    char,
+                    fragment_font,
+                    fallback_fonts.dup,
+                    fragment_font_options,
+                  ),
+                  char,
+                ]
+              end
             end
           end
 
@@ -523,6 +592,58 @@ module Prawn
           else
             find_font_for_this_glyph(char, fallback_fonts.shift, fallback_fonts, current_font_options)
           end
+        end
+
+        # Finds the first font, in the caller-provided order, that covers
+        # every codepoint of the grapheme cluster. Returns `nil` when no
+        # available font covers the whole cluster.
+        def find_font_for_this_cluster(cluster, fragment_font, fallback_fonts, fragment_font_options)
+          ([fragment_font] + fallback_fonts).find do |font_name|
+            @document.font(font_name, fragment_font_options)
+            cluster_covered_by_current_font?(cluster)
+          end
+        end
+
+        def cluster_covered_by_current_font?(cluster)
+          cluster.each_codepoint.all? do |codepoint|
+            char = codepoint.chr(::Encoding::UTF_8)
+
+            if default_ignorable_codepoint?(codepoint)
+              # Zero-width joiners and variation selectors don't need a glyph
+              # of their own, but the font must be able to encode them so
+              # they're preserved in the text layer (e.g. ToUnicode map).
+              font_encodes_char?(char)
+            else
+              @document.font.glyph_present?(char)
+            end
+          end
+        end
+
+        # Last resort for clusters no font fully covers: the first font that
+        # can at least encode the whole cluster, so that the original text is
+        # preserved in the text layer (e.g. the ToUnicode map) even though
+        # some glyphs may be missing.
+        def find_font_encoding_this_cluster(cluster, fragment_font, fallback_fonts, fragment_font_options)
+          ([fragment_font] + fallback_fonts).find do |font_name|
+            @document.font(font_name, fragment_font_options)
+            cluster.each_codepoint.all? do |codepoint|
+              font_encodes_char?(codepoint.chr(::Encoding::UTF_8))
+            end
+          end
+        end
+
+        def default_ignorable_codepoint?(codepoint)
+          codepoint == 0x200C || # ZERO WIDTH NON-JOINER
+            codepoint == 0x200D || # ZERO WIDTH JOINER
+            (0xFE00..0xFE0F).cover?(codepoint) || # variation selectors 1-16
+            (0xE0100..0xE01EF).cover?(codepoint) # variation selectors 17-256
+        end
+
+        def font_encodes_char?(char)
+          @document.font.normalize_encoding(char.dup)
+          true
+        rescue Prawn::Errors::IncompatibleStringEncoding
+          false
         end
 
         def form_fragments_from_like_font_glyph_pairs(font_glyph_pairs, hash)

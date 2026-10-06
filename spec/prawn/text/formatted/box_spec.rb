@@ -323,6 +323,165 @@ describe Prawn::Text::Formatted::Box do
     end
   end
 
+  describe 'Text::Formatted::Box with :fallback_fonts_mode option set to :grapheme_cluster' do
+    before do
+      pdf.font_families['Kai'] = {
+        normal: { file: "#{Prawn::DATADIR}/fonts/gkai00mp.ttf", font: 'Kai' },
+      }
+      pdf.font_families['DejaVu Sans'] = {
+        normal: { file: "#{Prawn::DATADIR}/fonts/DejaVuSans.ttf" },
+      }
+    end
+
+    it 'keeps a base character and its combining mark in a single font' do
+      pdf.formatted_text_box(
+        [{ text: "e\u0301" }],
+        fallback_fonts: ['DejaVu Sans'],
+        fallback_fonts_mode: :grapheme_cluster,
+      )
+
+      text = PDF::Inspector::Text.analyze(pdf.render)
+
+      fonts_used = text.font_settings.map { |e| e[:name] }
+      expect(fonts_used).to all(match(/DejaVuSans/))
+      expect(text.strings.join).to eq("e\u0301")
+    end
+
+    it 'splits a base character and its combining mark in the default :codepoint mode' do
+      pdf.formatted_text_box(
+        [{ text: "e\u0301" }],
+        fallback_fonts: ['DejaVu Sans'],
+      )
+
+      text = PDF::Inspector::Text.analyze(pdf.render)
+
+      fonts_used = text.font_settings.map { |e| e[:name] }
+      expect(fonts_used.length).to eq(2)
+      expect(fonts_used[0]).to eq(:Helvetica)
+      expect(fonts_used[1].to_s).to match(/DejaVuSans/)
+      expect(text.strings).to eq(['e', "\u0301"])
+    end
+
+    it 'skips fonts that do not cover the whole cluster' do
+      # Kai has a glyph for 'e' but not for the combining acute accent
+      pdf.formatted_text_box(
+        [{ text: "e\u0301" }],
+        fallback_fonts: ['Kai', 'DejaVu Sans'],
+        fallback_fonts_mode: :grapheme_cluster,
+      )
+
+      text = PDF::Inspector::Text.analyze(pdf.render)
+
+      fonts_used = text.font_settings.map { |e| e[:name] }
+      expect(fonts_used).to all(match(/DejaVuSans/))
+      expect(text.strings.join).to eq("e\u0301")
+    end
+
+    it 'keeps zero-width joiners and variation selectors with their cluster' do
+      pdf.formatted_text_box(
+        [{ text: "a\u200Db\uFE0F" }],
+        fallback_fonts: ['DejaVu Sans'],
+        fallback_fonts_mode: :grapheme_cluster,
+      )
+
+      text = PDF::Inspector::Text.analyze(pdf.render)
+
+      fonts_used = text.font_settings.map { |e| e[:name] }
+      expect(fonts_used).to all(match(/DejaVuSans/))
+      expect(text.strings.join).to eq("a\u200Db\uFE0F")
+    end
+
+    it 'treats zero-width joiners and variation selectors as separate characters in :codepoint mode' do
+      pdf.formatted_text_box(
+        [{ text: "a\u200Db\uFE0F" }],
+        fallback_fonts: ['DejaVu Sans'],
+        fallback_fonts_mode: :codepoint,
+      )
+
+      text = PDF::Inspector::Text.analyze(pdf.render)
+
+      fonts_used = text.font_settings.map { |e| e[:name] }
+      expect(fonts_used.length).to eq(4)
+      expect(text.strings).to eq(['a', "\u200D", 'b', "\uFE0F"])
+    end
+
+    it 'reports positions of clusters that no font covers' do
+      box = described_class.new(
+        [{ text: 'ab' }, { text: "\u{1F468}cd\u{1F469}" }],
+        document: pdf,
+        fallback_fonts: ['DejaVu Sans'],
+        fallback_fonts_mode: :grapheme_cluster,
+      )
+      box.render
+
+      expect(box.uncovered_clusters).to eq(
+        [
+          { index: 2, cluster: "\u{1F468}" },
+          { index: 5, cluster: "\u{1F469}" },
+        ],
+      )
+    end
+
+    it 'treats an emoji ZWJ sequence as a single cluster' do
+      box = described_class.new(
+        [{ text: "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}" }],
+        document: pdf,
+        fallback_fonts: ['DejaVu Sans'],
+        fallback_fonts_mode: :grapheme_cluster,
+      )
+      box.render
+
+      expect(box.uncovered_clusters).to eq(
+        [{ index: 0, cluster: "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}" }],
+      )
+
+      text = PDF::Inspector::Text.analyze(pdf.render)
+      expect(text.strings.join).to eq("\u{1F468}\u200D\u{1F469}\u200D\u{1F467}")
+    end
+
+    it 'maps multi-codepoint clusters back to the original text via ToUnicode' do
+      pdf.formatted_text_box(
+        [{ text: "e\u0301\u{1F600}" }],
+        fallback_fonts: ['DejaVu Sans'],
+        fallback_fonts_mode: :grapheme_cluster,
+      )
+
+      text = PDF::Inspector::Text.analyze(pdf.render)
+      expect(text.strings.join).to eq("e\u0301\u{1F600}")
+    end
+
+    it 'uses the same font selection for measuring and drawing' do
+      box = described_class.new(
+        [{ text: "e\u0301 x" }],
+        document: pdf,
+        fallback_fonts: ['DejaVu Sans'],
+        fallback_fonts_mode: :grapheme_cluster,
+      )
+
+      box.render(dry_run: true)
+      measured_height = box.height
+      measured_uncovered_clusters = box.uncovered_clusters.dup
+
+      box.render
+
+      expect(box.height).to eq(measured_height)
+      expect(box.uncovered_clusters).to eq(measured_uncovered_clusters)
+
+      text = PDF::Inspector::Text.analyze(pdf.render)
+      expect(text.strings.join).to eq("e\u0301 x")
+    end
+
+    it 'raises an ArgumentError for an unknown mode' do
+      expect {
+        described_class.new(
+          [{ text: 'hi' }],
+          document: pdf,
+          fallback_fonts_mode: :bogus,
+        )
+      }.to raise_error(ArgumentError)
+    end
+  end
+
   describe 'Text::Formatted::Box#extensions' do
     let(:formatted_wrap_override) do
       Module.new do
