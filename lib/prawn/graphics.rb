@@ -8,6 +8,7 @@
 
 require_relative 'graphics/blend_mode'
 require_relative 'graphics/color'
+require_relative 'graphics/spot_color'
 require_relative 'graphics/dash'
 require_relative 'graphics/cap_style'
 require_relative 'graphics/join_style'

@@ -108,6 +108,10 @@ module Prawn
       private
 
       def process_color(*color)
+        if color.first.is_a?(SpotColor) && color.length > 1
+          return color.first.with_values(color[1..])
+        end
+
         case color.size
         when 1
           color[0]
@@ -120,6 +124,8 @@ module Prawn
 
       def color_type(color)
         case color
+        when SpotColor
+          color.kind
         when String
           if /\A\h{6}\z/.match?(color)
             :RGB
@@ -140,6 +146,8 @@ module Prawn
 
       def normalize_color(color)
         case color_type(color)
+        when :Separation, :DeviceN
+          color.values.dup
         when :RGB
           r, g, b = hex2rgb(color)
           [r / 255.0, g / 255.0, b / 255.0]
@@ -155,6 +163,8 @@ module Prawn
 
       def color_space(color)
         case color_type(color)
+        when :Separation, :DeviceN
+          color.resource_name.to_sym
         when :RGB
           :DeviceRGB
         when :CMYK
@@ -164,7 +174,7 @@ module Prawn
 
       COLOR_SPACES = %i[DeviceRGB DeviceCMYK Pattern].freeze
 
-      def set_color_space(type, color_space)
+      def set_color_space(type, color_space, registered = false)
         # don't set the same color space again
         if current_color_space(type) == color_space &&
             !state.page.in_stamp_stream?
@@ -173,7 +183,7 @@ module Prawn
 
         set_current_color_space(color_space, type)
 
-        unless COLOR_SPACES.include?(color_space)
+        unless COLOR_SPACES.include?(color_space) || registered
           raise ArgumentError, "unknown color space: '#{color_space}'"
         end
 
@@ -204,6 +214,10 @@ module Prawn
         if options[:pattern]
           set_color_space(type, :Pattern)
           renderer.add_content("/#{color} #{operator}")
+        elsif color.is_a?(SpotColor)
+          register_spot_color(color)
+          set_color_space(type, color.resource_name.to_sym, true)
+          write_color(PDF::Core.real_params(color.values), operator)
         else
           set_color_space(type, color_space(color))
           color = color_to_s(color)
