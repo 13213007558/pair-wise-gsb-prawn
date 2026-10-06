@@ -58,6 +58,7 @@ module Prawn
     include Prawn::Stamp
     include Prawn::SoftMask
     include Prawn::TransformationStack
+    include Prawn::Document::Booklet
 
     alias inspect to_s
 
