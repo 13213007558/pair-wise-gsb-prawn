@@ -3,6 +3,7 @@
 require 'stringio'
 
 require_relative 'document/bounding_box'
+require_relative 'document/booklet_output'
 require_relative 'document/column_box'
 require_relative 'document/internals'
 require_relative 'document/span'
@@ -58,6 +59,7 @@ module Prawn
     include Prawn::Stamp
     include Prawn::SoftMask
     include Prawn::TransformationStack
+    include Prawn::Document::BookletOutput
 
     alias inspect to_s
 
